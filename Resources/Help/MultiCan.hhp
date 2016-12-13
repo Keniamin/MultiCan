@@ -1,0 +1,25 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=..\Help.chm
+Contents file=MultiCan.hhc
+Default Window=Main
+Default topic=Index.htm
+Display compile progress=Yes
+Index file=MultiCan.hhk
+Language=0x419 Русский (Россия)
+Title=О программе MultiCan
+
+[WINDOWS]
+Main=,"MultiCan.hhc","MultiCan.hhk","Index.htm","Work\StartWork.htm",,,,,0x42120,,0x4e,[0,0,640,480],,,,,,,0
+
+
+[FILES]
+Index.htm
+ReferenceList.htm
+Work\AddData.htm
+Work\Analysis.htm
+Work\ExtraOptions.htm
+Work\StartWork.htm
+
+[INFOTYPES]
+

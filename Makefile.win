@@ -1,0 +1,56 @@
+# Project: MultiCan
+# Compiler: GCC (c++11)
+
+CPP       = g++.exe
+LINK      = g++.exe
+WINDRES   = "windres.exe"
+INCS      = -I"C:/MinGW/include"
+RCINCS    = --include-dir "C:/MinGW/include"
+LIBS      = -L"C:/MinGW/lib" -static-libgcc -static-libstdc++ -lcomctl32 -lhtmlhelp -lwinmm -mwindows -O3 -s
+BIN       = Release/MultiCan.exe
+DEFINES   = -D_WIN32_IE=0x0700 -D_WIN32_WINNT=0x0501
+CFLAGS    = $(INCS) $(DEFINES) -std=gnu++11 -W -Wall -O3
+GPROF     = gprof.exe
+OBJ       = Release/Objects/CanAn.o Release/Objects/MainWindow.o Release/Objects/MultiCan.o Release/Objects/ExtString.o Release/Objects/GridWindow.o Release/Objects/nPoint.o Release/Objects/TitleWindow.o Release/MultiCan.res
+LINKOBJ   = "Release/Objects/CanAn.o" "Release/Objects/MainWindow.o" "Release/Objects/MultiCan.o" "Release/Objects/ExtString.o" "Release/Objects/GridWindow.o" "Release/Objects/nPoint.o" "Release/Objects/TitleWindow.o" "Release/MultiCan.res"
+
+ifeq ($(OS),Windows_NT)
+   RM = del /Q
+   FixPath = $(subst /,\,$1)
+else
+   RM = rm -f
+   FixPath = $1
+endif
+
+.PHONY: all clean
+all: $(BIN)
+
+clean:
+	$(RM) $(call FixPath,$(LINKOBJ)) "$(call FixPath,$(BIN))"
+
+$(BIN): $(OBJ)
+	$(LINK) $(LINKOBJ) -o "$(BIN)" $(LIBS)
+
+Release/Objects/MultiCan.o: $(GLOBALDEPS) MultiCan.cpp MainWindow.h Common/CmdLine.h Common/TitleWindow.h MultiCan/Resources.h
+	$(CPP) -c MultiCan.cpp -o Release/Objects/MultiCan.o $(CFLAGS)
+
+Release/Objects/CanAn.o: $(GLOBALDEPS) CanAn.cpp CanAn.h Common/nPoint.h
+	$(CPP) -c CanAn.cpp -o Release/Objects/CanAn.o $(CFLAGS)
+
+Release/Objects/MainWindow.o: $(GLOBALDEPS) MainWindow.cpp CanAn.h MainWindow.h MultiCan/Commands.h MultiCan/Resources.h MultiCan/Strings.h Common/FileIO.h Common/GridWindow.h Common/WinWndClasser.h
+	$(CPP) -c MainWindow.cpp -o Release/Objects/MainWindow.o $(CFLAGS)
+
+Release/Objects/nPoint.o: $(GLOBALDEPS) Common/nPoint.cpp Common/nPoint.h
+	$(CPP) -c Common/nPoint.cpp -o Release/Objects/nPoint.o $(CFLAGS)
+
+Release/Objects/ExtString.o: $(GLOBALDEPS) Common/ExtString.cpp Common/ExtString.h
+	$(CPP) -c Common/ExtString.cpp -o Release/Objects/ExtString.o $(CFLAGS)
+
+Release/Objects/TitleWindow.o: $(GLOBALDEPS) Common/TitleWindow.cpp Common/TitleWindow.h Common/WinWndClasser.h
+	$(CPP) -c Common/TitleWindow.cpp -o Release/Objects/TitleWindow.o $(CFLAGS)
+
+Release/Objects/GridWindow.o: $(GLOBALDEPS) Common/GridWindow.cpp Common/UndoList.h Common/GridWindow.h Common/WinWndClasser.h
+	$(CPP) -c Common/GridWindow.cpp -o Release/Objects/GridWindow.o $(CFLAGS)
+
+Release/MultiCan.res: MultiCan/Resources.rc
+	$(WINDRES) --input-format=rc -o Release/MultiCan.res $(RCINCS) MultiCan/Resources.rc -O coff
