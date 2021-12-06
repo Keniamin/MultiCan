@@ -14,9 +14,10 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
+    -mwindows
     -static-libgcc
     -static-libstdc++
     comctl32
-    htmlhelp
     winmm
+    "C:/Program Files (x86)/HTML Help Workshop/lib/htmlhelp.lib"
 )
