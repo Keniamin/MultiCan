@@ -86,20 +86,20 @@ MainWindow::MainWindow(void):
 	wndMenu(0),
 	wndHandle(0),
 	tabCtrl(0),
-	
+
 	factGrid(),
 	setGrid(),
 	corGrid(),
 	gFont(0),
-	
+
 	workFile(NULL),
 	fileType(0),
-	
+
 	changed(false),
 	pathLen(-1)
 {
 	INITCOMMONCONTROLSEX initCC;
-	
+
 	initCC.dwICC = ICC_STANDARD_CLASSES | ICC_TAB_CLASSES;
 	initCC.dwSize = sizeof(initCC);
 	InitCommonControlsEx(&initCC);
@@ -117,16 +117,16 @@ bool MainWindow::AskSave(void)
 {
 	if (!changed)
 		return true;
-	
+
 	switch (MessageBox(wndHandle, STR_MSG_WANTSAVE, STR_TITLE_MAINWINDOW, MB_YESNOCANCEL | MB_ICONQUESTION))
 	{
 	case IDYES:
 		SendMessage(wndHandle, WM_COMMAND, MAKEWPARAM(COMID_SAVE, 0), 0);
 		return (!changed);
-	
+
 	case IDNO:
 		return true;
-		
+
 	default:
 		return false;
 	}
@@ -136,11 +136,11 @@ bool MainWindow::Create(HINSTANCE hInst)
 {
 	if (wndHandle)
 		return 0;
-	
+
 	InitClass(hInst);
 	if (!wndMenu)
 		wndMenu = LoadMenu(hInst, MAKEINTRESOURCE(MENU_MAIN));
-	
+
 	wwcObject = (LONG_PTR) this;
 	wwcFunction = MainWindowProc;
 	return CreateWindow(CN_MW_CLASSNAME, "", WS_SIZEBOX | WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN, CW_USEDEFAULT, CW_USEDEFAULT, 600, 450, NULL, wndMenu, hInst, NULL);
@@ -151,7 +151,7 @@ void MainWindow::SetWorkFile(const char *name, int plen /* = -1 */)
 	size_t len;
 	if (workFile)
 		delete[] workFile;
-	
+
 	if (!name || !(len = strlen(name)))
 	{
 		workFile = NULL;
@@ -162,7 +162,7 @@ void MainWindow::SetWorkFile(const char *name, int plen /* = -1 */)
 		workFile = new char [len+1];
 		sprintf(workFile, "%s", name);
 		workFile[len] = 0;
-		
+
 		if (plen >= 0)
 			pathLen = plen;
 		else
@@ -183,15 +183,15 @@ LRESULT MainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	}
 	else if (uMsg != WM_CREATE)
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	
+
 	switch (uMsg)
 	{
 	case WM_CREATE:
 		wndHandle = hWnd;
-		
+
 		InitGridsFont();
 		InitTabCtrl();
-		
+
 		if (!workFile)
 			ResetFile();
 		else if (!LoadFile(workFile))
@@ -205,24 +205,24 @@ LRESULT MainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			UpdateTitle();
 		}
 		break;
-	
+
 	case WM_DESTROY:
 		factGrid.ClearFont();
 		setGrid.ClearFont();
 		corGrid.ClearFont();
-		
+
 		varGrid.ClearFont();
 		stdGrid.ClearFont();
 		pntGrid.ClearFont();
-		
+
 		DeleteObject(gFont);
 		wndHandle = 0;
 		tabCtrl = 0;
 		gFont = 0;
-		
+
 		PostQuitMessage(0);
 		return 0;
-	
+
 	case WM_COMMAND:
 		if (lParam == 0)
 			switch (LOWORD(wParam))
@@ -232,11 +232,11 @@ LRESULT MainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					return 0;
 				ResetFile();
 				break;
-			
+
 			case COMID_OPEN:
 				OpenCmd();
 				break;
-			
+
 			case COMID_SAVE:
 				if (workFile)
 				{
@@ -251,57 +251,57 @@ LRESULT MainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				else if (changed)
 					SendMessage(wndHandle, WM_COMMAND, MAKEWPARAM(COMID_SAVEAS, 0), 0);
 				break;
-			
+
 			case COMID_SAVEAS:
 				SaveAsCmd();
 				break;
-			
+
 			case COMID_EXIT:
 				PostMessage(wndHandle, WM_CLOSE, 0, 0);
 				break;
-			
+
 			case COMID_ADDSET:
 			case COMID_DELSET:
 			case COMID_ADDFACT:
 			case COMID_DELFACT:
 				DelAddCmd(LOWORD(wParam));
 				break;
-			
+
 			case COMID_CANAN:
 				StartCanAn();
 				break;
-			
+
 			case COMID_CHDECSEP:
 				ChangeDecSepCmd();
 				break;
-			
+
 			case COMID_REGEXT:
 				AssociateCmd();
 				break;
-			
+
 			case COMID_SHOWHELP:
 				SendMessage(wndHandle, WM_HELP, 0, 0);
 				break;
-			
+
 			case COMID_ABOUT:
 				AboutCmd();
 				break;
 			}
 		break;
-	
+
 	case WM_CLOSE:
 		if (!AskSave())
 			return 0;
 		break;
-	
+
 	case WM_HELP:
 		HelpCmd();
 		break;
-	
+
 	case WM_NOTIFY:
 		ChildNotify((LPNMHDR) lParam);
 		break;
-	
+
 	case WM_GETMINMAXINFO:
 		{
 			MINMAXINFO *mmi = (LPMINMAXINFO) lParam;
@@ -309,12 +309,12 @@ LRESULT MainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			mmi -> ptMinTrackSize.y = minWndHeight;
 		}
 		break;
-	
+
 	case WM_SIZE:
 		ResizeChildren();
 		break;
 	}
-	
+
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
@@ -323,24 +323,24 @@ void MainWindow::CreateTabs(void)
 	size_t i, num;
 	TC_ITEM newItem;
 	const char* const *tabs;
-	
+
 	switch (fileType)
 	{
 	case FILETYPE_DATA:
 		num = sizeof(gDataTabs);
 		tabs = gDataTabs;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		num = sizeof(gResTab);
 		tabs = gResTab;
 		break;
-	
+
 	default:
 		num = 0;
 		tabs = NULL;
 	}
-	
+
 	num /= sizeof(char*);
 	newItem.mask = TCIF_TEXT;
 	for (i = 0; i < num; ++i)
@@ -355,20 +355,20 @@ void MainWindow::UpdateTitle(void)
 	const char *file;
 	size_t cur;
 	char *buf;
-	
+
 	if (!wndHandle)
 		return;
-	
+
 	file = (workFile ? workFile + pathLen : STR_TITLE_NOFILE);
 	buf = new char [strlen(STR_TITLE_MAINWINDOW) + strlen(file) + strlen(" - [*]") + 1];
-	
+
 	cur = sprintf(buf, "%s", STR_TITLE_MAINWINDOW);
 	cur += sprintf(buf+cur, " - [");
 	cur += sprintf(buf+cur, "%s", file);
 	if (changed)
 		cur += sprintf(buf+cur, "*");
 	cur += sprintf(buf+cur, "]");
-	
+
 	SendMessage(wndHandle, WM_SETTEXT, 0, (LPARAM) buf);
 	delete[] buf;
 }
@@ -376,20 +376,20 @@ void MainWindow::UpdateTitle(void)
 void MainWindow::ResizeChildren()
 {
 	RECT wndClRect, tabRect;
-	
+
 	GetClientRect(wndHandle, &wndClRect);
 	tabRect = wndClRect;
-	
+
 	++tabRect.top;
 	--tabRect.right;
 	--tabRect.bottom;
 	tabRect.left += 2;
 	SendMessage(tabCtrl, TCM_ADJUSTRECT, FALSE, (LPARAM) &tabRect);
-	
+
 	tabRect.bottom = tabRect.top;
 	SendMessage(tabCtrl, TCM_ADJUSTRECT, TRUE, (LPARAM) &tabRect);
 	SetWindowPos(tabCtrl, NULL, tabRect.left, tabRect.top, tabRect.right-tabRect.left, tabRect.bottom-tabRect.top, SWP_NOZORDER | SWP_NOACTIVATE);
-	
+
 	wndClRect.bottom -= 2;
 	wndClRect.left = tabRect.left;
 	wndClRect.top = tabRect.bottom - 1;
@@ -401,7 +401,7 @@ void MainWindow::ResizeChildren()
 		SetWindowPos(setGrid, NULL, wndClRect.left, wndClRect.top, wndClRect.right-wndClRect.left, wndClRect.bottom-wndClRect.top, SWP_NOZORDER | SWP_NOACTIVATE);
 		SetWindowPos(corGrid, NULL, wndClRect.left, wndClRect.top, wndClRect.right-wndClRect.left, wndClRect.bottom-wndClRect.top, SWP_NOZORDER | SWP_NOACTIVATE);
 		break;
-	
+
 	case FILETYPE_RESULT:
 		SetWindowPos(varGrid, NULL, wndClRect.left, wndClRect.top, wndClRect.right-wndClRect.left, wndClRect.bottom-wndClRect.top, SWP_NOZORDER | SWP_NOACTIVATE);
 		SetWindowPos(stdGrid, NULL, wndClRect.left, wndClRect.top, wndClRect.right-wndClRect.left, wndClRect.bottom-wndClRect.top, SWP_NOZORDER | SWP_NOACTIVATE);
@@ -424,17 +424,17 @@ void MainWindow::ShowTab(int num)
 		case 0:
 			SetFocus(factGrid);
 			break;
-		
+
 		case 1:
 			SetFocus(setGrid);
 			break;
-		
+
 		case 2:
 			SetFocus(corGrid);
 			break;
 		}
 		break;
-	
+
 	case FILETYPE_RESULT:
 		ShowWindow(varGrid, ((num == 0) ? SW_SHOW : SW_HIDE));
 		ShowWindow(stdGrid, ((num == 1) ? SW_SHOW : SW_HIDE));
@@ -444,11 +444,11 @@ void MainWindow::ShowTab(int num)
 		case 0:
 			SetFocus(varGrid);
 			break;
-		
+
 		case 1:
 			SetFocus(stdGrid);
 			break;
-		
+
 		case 2:
 			SetFocus(pntGrid);
 			break;
@@ -466,51 +466,51 @@ void MainWindow::SetFileType(char newType)
 			factGrid.DestroyAll();
 			setGrid.DestroyAll();
 			corGrid.DestroyAll();
-			
+
 			EnableMenuItem(GetMenu(wndHandle), COMID_CANAN, MF_BYCOMMAND | MF_GRAYED);
 			break;
-		
+
 		case FILETYPE_RESULT:
 			varGrid.DestroyAll();
 			stdGrid.DestroyAll();
 			pntGrid.DestroyAll();
-			
+
 			EnableMenuItem(GetMenu(wndHandle), COMID_CHDECSEP, MF_BYCOMMAND | MF_GRAYED);
 			break;
 		}
-		
+
 		SendMessage(tabCtrl, TCM_DELETEALLITEMS, 0, 0);
 		fileType = newType;
 		CreateTabs();
-		
+
 		switch (fileType)
 		{
 		case FILETYPE_DATA:
 			factGrid.Create(wndHandle);
 			setGrid.Create(wndHandle);
 			corGrid.Create(wndHandle);
-			
+
 			EnableMenuItem(GetMenu(wndHandle), COMID_CANAN, MF_BYCOMMAND | MF_ENABLED);
 			break;
-		
+
 		case FILETYPE_RESULT:
 			varGrid.Create(wndHandle);
 			stdGrid.Create(wndHandle);
 			pntGrid.Create(wndHandle);
-			
+
 			EnableMenuItem(GetMenu(wndHandle), COMID_CHDECSEP, MF_BYCOMMAND | MF_ENABLED);
 			break;
 		}
 		ResizeChildren();
 	}
-	
+
 	ShowTab(0);
 	switch (fileType)
 	{
 	case FILETYPE_DATA:
 		factGrid.Redraw();
 		break;
-	
+
 	case FILETYPE_RESULT:
 		varGrid.Redraw();
 		break;
@@ -522,11 +522,11 @@ void MainWindow::ResetFile(void)
 	factGrid.SetSizes(1, sizeof(gFactCols) / sizeof(char*));
 	setGrid.SetSizes(1, sizeof(gSetCols) / sizeof(char*) - 1);
 	corGrid.SetSizes(1, sizeof(gCorCols) / sizeof(char*));
-	
+
 	SetDataGridsFixedCells(true, true, true);
 	SetFileType(FILETYPE_DATA);
 	SetWorkFile(NULL);
-	
+
 	changed = false;
 	UpdateTitle();
 }
@@ -536,13 +536,13 @@ bool MainWindow::SaveFile(char *file)
 	int s, f, v;
 	char buf[8];
 	HANDLE hFile;
-	
+
 	if ((hFile = CreateFile(file, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 		return false;
-	
+
 	sprintf(buf, "MCan");
 	buf[5] = 0;
-	
+
 	if (!WriteBuf(hFile, buf, 4))
 	{
 		CloseHandle(hFile);
@@ -553,25 +553,25 @@ bool MainWindow::SaveFile(char *file)
 		CloseHandle(hFile);
 		return false;
 	}
-	
+
 	switch (fileType)
 	{
 	case FILETYPE_DATA:
 		f = factGrid.GetRowsCount()-1;
 		s = setGrid.GetRowsCount()-1;
-		
+
 		if (!WriteBuf(hFile, &s, sizeof(s)) || !WriteBuf(hFile, &f, sizeof(f)))
 		{
 			CloseHandle(hFile);
 			return false;
 		}
 		break;
-	
+
 	case FILETYPE_RESULT:
 		v = varGrid.GetColsCount()-1;
 		s = pntGrid.GetRowsCount()-1;
 		f = varGrid.GetRowsCount() - sizeof(gVarRows) / sizeof(char*);
-		
+
 		if (!WriteBuf(hFile, &s, sizeof(s)) || !WriteBuf(hFile, &f, sizeof(f)) || !WriteBuf(hFile, &v, sizeof(v)))
 		{
 			CloseHandle(hFile);
@@ -579,13 +579,13 @@ bool MainWindow::SaveFile(char *file)
 		}
 		break;
 	}
-	
+
 	if (!SaveData(hFile))
 	{
 		CloseHandle(hFile);
 		return false;
 	}
-	
+
 	SaveSizes(hFile);
 	CloseHandle(hFile);
 	return true;
@@ -596,10 +596,10 @@ bool MainWindow::LoadFile(char *file)
 	int s, f, v;
 	HANDLE hFile;
 	char newType, buf[8];
-	
+
 	if ((hFile = CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 		return false;
-	
+
 	buf[4] = 0;
 	if (!ReadBuf(hFile, buf, 4) || strcmp(buf, "MCan"))
 	{
@@ -611,7 +611,7 @@ bool MainWindow::LoadFile(char *file)
 		CloseHandle(hFile);
 		return false;
 	}
-	
+
 	switch (newType)
 	{
 	case FILETYPE_DATA:
@@ -620,51 +620,51 @@ bool MainWindow::LoadFile(char *file)
 			CloseHandle(hFile);
 			return false;
 		}
-		
+
 		factGrid.SetSizes(f+1, sizeof(gFactCols) / sizeof(char*));
 		setGrid.SetSizes(s+1, f + sizeof(gSetCols) / sizeof(char*) - 1);
 		corGrid.SetSizes(f+1, f + sizeof(gCorCols) / sizeof(char*));
-		
+
 		if (!LoadData(hFile, newType))
 		{
 			factGrid.DestroyAll();
 			setGrid.DestroyAll();
 			corGrid.DestroyAll();
-			
+
 			CloseHandle(hFile);
 			return false;
 		}
-		
+
 		SetDataGridsFixedCells(true, true, true);
 		break;
-	
+
 	case FILETYPE_RESULT:
 		if (!ReadBuf(hFile, &s, sizeof(s)) || !ReadBuf(hFile, &f, sizeof(f)) || !ReadBuf(hFile, &v, sizeof(v)))
 		{
 			CloseHandle(hFile);
 			return false;
 		}
-		
+
 		varGrid.SetSizes(f + sizeof(gVarRows) / sizeof(char*), v+1);
 		stdGrid.SetSizes(f + sizeof(gStdRows) / sizeof(char*), v+1);
 		pntGrid.SetSizes(s+1, v + sizeof(gPntCols) / sizeof(char*) - 1);
-		
+
 		if (!LoadData(hFile, newType))
 		{
 			varGrid.DestroyAll();
 			stdGrid.DestroyAll();
 			pntGrid.DestroyAll();
-			
+
 			CloseHandle(hFile);
 			return false;
 		}
-		
+
 		SetVarGridsFixedCells(true, true, true);
 		break;
 	}
 	LoadSizes(hFile, newType);
 	CloseHandle(hFile);
-	
+
 	SetFileType(newType);
 	return true;
 }
@@ -681,7 +681,7 @@ bool MainWindow::SaveData(HANDLE hFile)
 		if (!SaveGridData(&corGrid, hFile))
 			return false;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		if (!SaveGridData(&varGrid, hFile, 0))
 			return false;
@@ -691,7 +691,7 @@ bool MainWindow::SaveData(HANDLE hFile)
 			return false;
 		break;
 	}
-	
+
 	return true;
 }
 
@@ -707,7 +707,7 @@ bool MainWindow::LoadData(HANDLE hFile, char newType)
 		if (!LoadGridData(&corGrid, hFile))
 			return false;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		if (!LoadGridData(&varGrid, hFile, 0))
 			return false;
@@ -717,7 +717,7 @@ bool MainWindow::LoadData(HANDLE hFile, char newType)
 			return false;
 		break;
 	}
-	
+
 	return true;
 }
 
@@ -733,7 +733,7 @@ bool MainWindow::SaveSizes(HANDLE hFile)
 		if (!SaveGridSizes(&corGrid, hFile))
 			return false;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		if (!SaveGridSizes(&varGrid, hFile))
 			return false;
@@ -743,7 +743,7 @@ bool MainWindow::SaveSizes(HANDLE hFile)
 			return false;
 		break;
 	}
-	
+
 	return true;
 }
 
@@ -759,7 +759,7 @@ bool MainWindow::LoadSizes(HANDLE hFile, char newType)
 		if (!LoadGridSizes(&corGrid, hFile))
 			return false;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		if (!LoadGridSizes(&varGrid, hFile))
 			return false;
@@ -769,7 +769,7 @@ bool MainWindow::LoadSizes(HANDLE hFile, char newType)
 			return false;
 		break;
 	}
-	
+
 	return true;
 }
 
@@ -779,20 +779,20 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 	char buf[128];
 	COLORREF c1, c2, c3;
 	int i, j, sCnt, cCnt, rCnt;
-	
+
 	c2 = GetSysColor(COLOR_WINDOW);
 	c3 = GetSysColor(COLOR_BTNFACE);
-	
+
 	r = (255 - GetRValue(c2) + 9*GetRValue(c3)) / 10;
 	g = (255 - GetGValue(c2) + 9*GetGValue(c3)) / 10;
 	b = (255 - GetBValue(c2) + 9*GetBValue(c3)) / 10;
 	c1 = RGB(r, g, b);
-	
+
 	r = (255 - GetRValue(c2) + GetRValue(c3)) / 2;
 	g = (255 - GetGValue(c2) + GetGValue(c3)) / 2;
 	b = (255 - GetBValue(c2) + GetBValue(c3)) / 2;
 	c2 = RGB(r, g, b);
-	
+
 	if (vg)
 	{
 		sCnt = sizeof(gVarRows) / sizeof(char*);
@@ -821,7 +821,7 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 			varGrid.SetCellProp(0, i, GWCA_CENTER | GWCA_BOTTOM | GWCP_READONLY);
 			sprintf(buf, "%s%d", gVarCols, i);
 			varGrid.SetCell(0, i, buf);
-			
+
 			for (j = 1; j < rCnt; ++j)
 				varGrid.SetCellProp(j, i, GWCP_READONLY);
 		}
@@ -829,7 +829,7 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 		if (cCnt > 1)
 			varGrid.SelectCells(1, 1, 0, 0);
 	}
-	
+
 	if (sg)
 	{
 		sCnt = sizeof(gStdRows) / sizeof(char*);
@@ -858,7 +858,7 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 			stdGrid.SetCellProp(0, i, GWCA_CENTER | GWCA_BOTTOM | GWCP_READONLY);
 			sprintf(buf, "%s%d", gStdCols, i);
 			stdGrid.SetCell(0, i, buf);
-			
+
 			for (j = 1; j < rCnt; ++j)
 				stdGrid.SetCellProp(j, i, GWCP_READONLY);
 		}
@@ -866,7 +866,7 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 		if (cCnt > 1)
 			stdGrid.SelectCells(1, 1, 0, 0);
 	}
-	
+
 	if (pg)
 	{
 		sCnt = sizeof(gPntCols) / sizeof(char*) - 1;
@@ -895,7 +895,7 @@ void MainWindow::SetVarGridsFixedCells(bool vg, bool sg, bool pg, bool chSize /*
 		{
 			pntGrid.SetCellColor(i, 0, c1);
 			pntGrid.SetCellProp(i, 0, GWCA_RIGHT | GWCA_VCENTER | GWCP_READONLY);
-			
+
 			for (j = 1; j < cCnt; ++j)
 				pntGrid.SetCellProp(i, j, GWCP_READONLY);
 		}
@@ -911,20 +911,20 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 	BYTE r, g, b;
 	COLORREF c1, c2, c3;
 	int i, j, sCnt, cCnt, rCnt, mCol;
-	
+
 	c2 = GetSysColor(COLOR_WINDOW);
 	c3 = GetSysColor(COLOR_BTNFACE);
-	
+
 	r = (255 - GetRValue(c2) + 9*GetRValue(c3)) / 10;
 	g = (255 - GetGValue(c2) + 9*GetGValue(c3)) / 10;
 	b = (255 - GetBValue(c2) + 9*GetBValue(c3)) / 10;
 	c1 = RGB(r, g, b);
-	
+
 	r = (255 - GetRValue(c2) + GetRValue(c3)) / 2;
 	g = (255 - GetGValue(c2) + GetGValue(c3)) / 2;
 	b = (255 - GetBValue(c2) + GetBValue(c3)) / 2;
 	c2 = RGB(r, g, b);
-	
+
 	mCol = -1;
 	if (fg)
 	{
@@ -938,7 +938,7 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 			factGrid.SetCellColor(0, i, c1);
 			factGrid.SetCellProp(0, i, GWCA_CENTER | GWCA_BOTTOM | GWCP_READONLY);
 			factGrid.SetCell(0, i, gFactCols[i]);
-			
+
 			if (gFactCols[i] == STR_COL_FACTIVE)
 				mCol = i;
 		}
@@ -950,7 +950,7 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 			factGrid.SetCellProp(i, 0, GWCA_RIGHT | GWCA_VCENTER | GWCP_READONLY);
 			sprintf(buf, "%s%d", gFactRows, i);
 			factGrid.SetCell(i, 0, buf);
-			
+
 			factGrid.SetCellTextColor(i, mCol, RGB(0, 192, 0));
 			factGrid.SetCellProp(i, mCol, GWCP_MARKCELL | GWCM_MARKN | GWCM_MARKV);
 		}
@@ -958,7 +958,7 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 		if (rCnt > 1)
 			factGrid.SelectCells(1, 1, 0, 0);
 	}
-	
+
 	if (sg)
 	{
 		sCnt = sizeof(gSetCols) / sizeof(char*) - 1;
@@ -994,7 +994,7 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 		if (rCnt > 1)
 			setGrid.SelectCells(1, 1, 0, 0);
 	}
-	
+
 	if (cg)
 	{
 		sCnt = sizeof(gCorCols) / sizeof(char*);
@@ -1027,12 +1027,12 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 		corGrid.SelectCells(0, 0, 0, 0, true);
 		if (rCnt > 1)
 			corGrid.SelectCells(1, 1, 0, 0);
-		
+
 		sprintf(buf, "1.0");
 		for (i = 1; i < rCnt; ++i)
 		{
 			j = i+sCnt-1;
-			
+
 			corGrid.SetCellTextColor(i, j, c2);
 			corGrid.SetCellProp(i, j, GWCP_READONLY);
 			corGrid.SetCell(i, j, buf);
@@ -1047,10 +1047,10 @@ void MainWindow::DeleteSet(int num)
 		MessageBox(wndHandle, STR_MSG_BADSETNUM, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
 		return;
 	}
-	
+
 	setGrid.DeleteRow(num);
 	SetDataGridsFixedCells(false, true, false, false);
-	
+
 	setGrid.Redraw();
 	if (!changed)
 	{
@@ -1062,24 +1062,24 @@ void MainWindow::DeleteSet(int num)
 void MainWindow::DeleteFactor(int num)
 {
 	unsigned int sCnt;
-	
+
 	if (num < 1 || num >= factGrid.GetRowsCount())
 	{
 		MessageBox(wndHandle, STR_MSG_BADFACTNUM, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
 		return;
 	}
-	
+
 	factGrid.DeleteRow(num);
 	corGrid.DeleteRow(num);
-	
+
 	sCnt = sizeof(gSetCols) / sizeof(char*) - 1;
 	setGrid.DeleteCol(sCnt+num-1);
-	
+
 	sCnt = sizeof(gCorCols) / sizeof(char*);
 	corGrid.DeleteCol(sCnt+num-1);
-	
+
 	SetDataGridsFixedCells(true, true, true, false);
-	
+
 	factGrid.Redraw();
 	setGrid.Redraw();
 	corGrid.Redraw();
@@ -1094,12 +1094,12 @@ void MainWindow::AddSets(unsigned int cnt)
 {
 	if (cnt < 1)
 		return;
-	
+
 	do
 		setGrid.AddRow(setGrid.GetRowsCount());
 	while (--cnt);
 	SetDataGridsFixedCells(false, true, false, false);
-	
+
 	setGrid.Redraw();
 	if (!changed)
 	{
@@ -1113,24 +1113,24 @@ void MainWindow::AddFactors(unsigned int cnt)
 	int mCol;
 	if (cnt < 1)
 		return;
-	
+
 	for (mCol = sizeof(gFactCols) / sizeof(char*) - 1; mCol >= 0; --mCol)
 		if (gFactCols[mCol] == STR_COL_FACTIVE)
 			break;
-	
+
 	do
 	{
 		factGrid.AddRow(factGrid.GetRowsCount());
 		setGrid.AddCol(setGrid.GetColsCount());
 		corGrid.AddRow(corGrid.GetRowsCount());
 		corGrid.AddCol(corGrid.GetColsCount());
-		
+
 		factGrid.SetCellMark(factGrid.GetRowsCount()-1, mCol, GWCM_MARKV);
 		corGrid.SetColWidth(corGrid.GetColsCount()-1, gCorColsWid[sizeof(gCorCols) / sizeof(char*)]);
 	}
 	while (--cnt);
 	SetDataGridsFixedCells(true, true, true, false);
-	
+
 	factGrid.Redraw();
 	setGrid.Redraw();
 	corGrid.Redraw();
@@ -1145,7 +1145,7 @@ void MainWindow::ChildNotify(NMHDR *notInfo)
 {
 	if (notInfo->hwndFrom == NULL)
 		return;
-	
+
 	if (notInfo->hwndFrom == tabCtrl)
 	{
 		if (notInfo->code == TCN_SELCHANGE)
@@ -1159,21 +1159,21 @@ void MainWindow::ChildNotify(NMHDR *notInfo)
 			changed = true;
 			UpdateTitle();
 		}
-		
+
 		if (notInfo->hwndFrom == corGrid && notInfo->code == GN_CHANGE)
 		{
 			int sCnt, r, c;
 			GWNM_CHANGE *gwcInfo;
-			
+
 			gwcInfo = (GWNM_CHANGE*) notInfo;
 			sCnt = sizeof(gCorCols) / sizeof(char*);
-			
+
 			r = gwcInfo->row;
 			c = gwcInfo->col;
 			if (c >= sCnt)
 			{
 				const char *cell = corGrid.GetCell(r, c);
-				
+
 				r += sCnt - 1;
 				c -= sCnt - 1;
 				corGrid.SetCell(c, r, cell);
@@ -1186,32 +1186,32 @@ void MainWindow::ChangeDecSepCmd(void)
 {
 	int r, c;
 	int rCnt, cCnt;
-	
+
 	if (fileType != FILETYPE_RESULT)
 		return;
-	
+
 	rCnt = varGrid.GetRowsCount();
 	cCnt = varGrid.GetColsCount();
 	for (r = 1; r < rCnt; ++r)
 		for (c = 1; c < cCnt; ++c)
 			ChangeDecSep(&varGrid, r, c);
-	
+
 	rCnt = stdGrid.GetRowsCount();
 	cCnt = stdGrid.GetColsCount();
 	for (r = 1; r < rCnt; ++r)
 		for (c = 1; c < cCnt; ++c)
 			ChangeDecSep(&stdGrid, r, c);
-	
+
 	rCnt = pntGrid.GetRowsCount();
 	cCnt = pntGrid.GetColsCount();
 	for (r = 1; r < rCnt; ++r)
 		for (c = 1; c < cCnt; ++c)
 			ChangeDecSep(&pntGrid, r, c);
-	
+
 	varGrid.Redraw();
 	stdGrid.Redraw();
 	pntGrid.Redraw();
-	
+
 	changed = true;
 	UpdateTitle();
 }
@@ -1223,10 +1223,10 @@ void MainWindow::AssociateCmd(void)
 	size_t len;
 	HKEY key, subKey;
 	char *str, fileName[MAX_PATH+4];
-	
+
 	len = strlen(STR_DATAEXT) + 2;
 	str = new char [len];
-	
+
 	sprintf(str, ".%s", STR_DATAEXT);
 	if (RegCreateKeyEx(HKEY_CLASSES_ROOT, str, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &key, NULL) == ERROR_SUCCESS)
 	{
@@ -1234,10 +1234,10 @@ void MainWindow::AssociateCmd(void)
 		RegCloseKey(key);
 	}
 	delete[] str;
-	
+
 	len = strlen(STR_RESEXT) + 2;
 	str = new char [len];
-	
+
 	sprintf(str, ".%s", STR_RESEXT);
 	if (RegCreateKeyEx(HKEY_CLASSES_ROOT, str, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &key, NULL) == ERROR_SUCCESS)
 	{
@@ -1245,11 +1245,11 @@ void MainWindow::AssociateCmd(void)
 		RegCloseKey(key);
 	}
 	delete[] str;
-	
+
 	GetModuleFileName(NULL, fileName, sizeof(fileName));
 	len = strlen(fileName) + 16;
 	str = new char [len];
-	
+
 	if (RegCreateKeyEx(HKEY_CLASSES_ROOT, STR_DATAEXT_REGTYPE, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &key, NULL) == ERROR_SUCCESS)
 	{
 		RegSetValueEx(key, NULL, 0, REG_SZ, (const BYTE*) STR_DATAEXT_REGDESC, sizeof(STR_DATAEXT_REGDESC));
@@ -1291,10 +1291,10 @@ void MainWindow::DelAddCmd(int id)
 {
 	int i;
 	CN_DIALOG_DATA cnDlgProp;
-	
+
 	if (fileType != FILETYPE_DATA)
 		return;
-	
+
 	switch (id)
 	{
 	case COMID_ADDFACT:
@@ -1302,51 +1302,51 @@ void MainWindow::DelAddCmd(int id)
 		cnDlgProp.wndDesc = STR_DLG_ADDFACT;
 		cnDlgProp.maxLength = 3;
 		break;
-	
+
 	case COMID_DELFACT:
 		cnDlgProp.dlgTitle = STR_TITLE_DELDLG;
 		cnDlgProp.wndDesc = STR_DLG_DELFACT;
 		cnDlgProp.maxLength = 1;
-		
+
 		i = factGrid.GetRowsCount() - 1;
 		while(i /= 10)
 			++cnDlgProp.maxLength;
 		break;
-	
+
 	case COMID_ADDSET:
 		cnDlgProp.dlgTitle = STR_TITLE_ADDDLG;
 		cnDlgProp.wndDesc = STR_DLG_ADDSET;
 		cnDlgProp.maxLength = 3;
 		break;
-	
+
 	case COMID_DELSET:
 		cnDlgProp.dlgTitle = STR_TITLE_DELDLG;
 		cnDlgProp.wndDesc = STR_DLG_DELSET;
 		cnDlgProp.maxLength = 1;
-		
+
 		i = setGrid.GetRowsCount() - 1;
 		while(i /= 10)
 			++cnDlgProp.maxLength;
 		break;
 	}
-	
+
 	if (DialogBoxParam((HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE), MAKEINTRESOURCE(DIALOG_DELADD), wndHandle, DelAddDlgProc, (LPARAM) &cnDlgProp) != IDOK)
 		return;
-	
+
 	switch (id)
 	{
 	case COMID_ADDFACT:
 		AddFactors(cnDlgProp.inpValue);
 		break;
-	
+
 	case COMID_DELFACT:
 		DeleteFactor(cnDlgProp.inpValue);
 		break;
-	
+
 	case COMID_ADDSET:
 		AddSets(cnDlgProp.inpValue);
 		break;
-	
+
 	case COMID_DELSET:
 		DeleteSet(cnDlgProp.inpValue);
 		break;
@@ -1359,7 +1359,7 @@ void MainWindow::SaveAsCmd(void)
 	const char *fil, *ext;
 	OPENFILENAME osDlgProp;
 	char *filStr, name[MAX_PATH+4];
-	
+
 	switch (fileType)
 	{
 	case FILETYPE_DATA:
@@ -1367,28 +1367,28 @@ void MainWindow::SaveAsCmd(void)
 		fil = STR_FILTER_DATAEXT;
 		ext = STR_DATAEXT;
 		break;
-	
+
 	case FILETYPE_RESULT:
 		filSize = sizeof(STR_FILTER_RESEXT);
 		fil = STR_FILTER_RESEXT;
 		ext = STR_RESEXT;
 		break;
-	
+
 	default:
 		filSize = sizeof(STR_FILTER_NOEXT);
 		fil = STR_FILTER_NOEXT;
 		ext = NULL;
 	}
 	filStr = new char [filSize+1];
-	
+
 	memcpy(filStr, fil, filSize);
 	filStr[--filSize] = 0;
-	
+
 	if (workFile)
 		sprintf(name, "%s", workFile + pathLen);
 	else
 		name[0] = 0;
-	
+
 	memset(&osDlgProp, 0, sizeof(osDlgProp));
 	osDlgProp.lStructSize = sizeof(osDlgProp);
 	osDlgProp.nMaxFile = sizeof(name);
@@ -1396,7 +1396,7 @@ void MainWindow::SaveAsCmd(void)
 	osDlgProp.lpstrFilter = filStr;
 	osDlgProp.lpstrDefExt = ext;
 	osDlgProp.lpstrFile = name;
-	
+
 	osDlgProp.Flags = OFN_EXPLORER | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	if (GetSaveFileName(&osDlgProp))
 	{
@@ -1416,13 +1416,13 @@ void MainWindow::AboutCmd(void)
 {
 	HINSTANCE hInst;
 	CN_DIALOG_DATA cnDlgProp;
-	
+
 	hInst = (HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE);
-	
+
 	cnDlgProp.maxLength = cnDlgProp.inpValue = 0;
 	cnDlgProp.dlgTitle = STR_TITLE_ABOUTDLG;
 	cnDlgProp.wndDesc = STR_DLG_ABOUT;
-	
+
 	PlaySound(MAKEINTRESOURCE(MUSIC_CN), hInst, SND_RESOURCE | SND_ASYNC);
 	DialogBoxParam(hInst, MAKEINTRESOURCE(DIALOG_ABOUT), wndHandle, AboutDlgProc, (LPARAM) &cnDlgProp);
 	PlaySound(NULL, NULL, 0);
@@ -1433,54 +1433,54 @@ void MainWindow::HelpCmd(void)
 	size_t len;
 	HANDLE helpFile;
 	char appDataPath[MAX_PATH+4], *helpFileName;
-	
+
 	if (SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, appDataPath) != S_OK)
 		appDataPath[0] = 0;
-	
+
 	len = strlen(appDataPath);
 	if (appDataPath[len] != '\\')
 	{
 		appDataPath[len] = '\\';
 		appDataPath[++len] = 0;
 	}
-	
+
 	len += strlen(STR_HELP_DIRNAME) + strlen(STR_HELP_FILENAME) + 3;
 	helpFileName = new char [len+1];
-	
+
 	memcpy(helpFileName, appDataPath, len * sizeof(char));
 	len = strlen(appDataPath);
-	
+
 	memcpy(helpFileName+len, STR_HELP_DIRNAME, strlen(STR_HELP_DIRNAME) * sizeof(char));
 	helpFileName[len += strlen(STR_HELP_DIRNAME)] = 0;
 	CreateDirectory(helpFileName, NULL);
-	
+
 	memcpy(helpFileName+len, STR_HELP_FILENAME, strlen(STR_HELP_FILENAME) * sizeof(char));
 	helpFileName[len += strlen(STR_HELP_FILENAME)] = 0;
-	
+
 	if ((helpFile = CreateFile(helpFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
 	{
 		HRSRC resInfo;
 		size_t resSize;
 		HGLOBAL resHandle;
 		const void *resData;
-		
+
 		resInfo = FindResource(NULL, MAKEINTRESOURCE(MANUAL_RES), RT_RCDATA);
 		resSize = SizeofResource(NULL, resInfo);
 		resHandle = LoadResource(NULL, resInfo);
 		resData = LockResource(resHandle);
-		
+
 		WriteBuf(helpFile, resData, resSize);
 		CloseHandle(helpFile);
 	}
 	else if (GetFileAttributes(helpFileName) == 0xFFFFFFFF)
 		return;
-	
+
 	len += 3;
 	helpFileName[len] = 0;
 	helpFileName[len-3] = ':';
 	helpFileName[len-2] = ':';
 	helpFileName[len-1] = '/';
-	
+
 	HtmlHelp(wndHandle, helpFileName, HH_DISPLAY_TOPIC, 0);
 	delete[] helpFileName;
 }
@@ -1490,13 +1490,13 @@ void MainWindow::OpenCmd(void)
 	char *filStr, name[MAX_PATH+4];
 	OPENFILENAME osDlgProp;
 	size_t filSize;
-	
+
 	if (!AskSave())
 		return;
-	
+
 	filSize = sizeof(STR_FILTER_NOEXT) + sizeof(STR_FILTER_ALLEXT) + sizeof(STR_FILTER_DATAEXT) + sizeof(STR_FILTER_RESEXT) + 1;
 	filStr = new char [filSize];
-	
+
 	memcpy(filStr, STR_FILTER_ALLEXT, sizeof(STR_FILTER_ALLEXT));
 	filSize = sizeof(STR_FILTER_ALLEXT)-1;
 	memcpy(filStr+filSize, STR_FILTER_DATAEXT, sizeof(STR_FILTER_DATAEXT));
@@ -1506,16 +1506,16 @@ void MainWindow::OpenCmd(void)
 	memcpy(filStr+filSize, STR_FILTER_NOEXT, sizeof(STR_FILTER_NOEXT));
 	filSize += sizeof(STR_FILTER_NOEXT)-1;
 	filStr[filSize] = 0;
-	
+
 	name[0] = 0;
-	
+
 	memset(&osDlgProp, 0, sizeof(osDlgProp));
 	osDlgProp.lStructSize = sizeof(OPENFILENAME);
 	osDlgProp.nMaxFile = sizeof(name);
 	osDlgProp.hwndOwner = wndHandle;
 	osDlgProp.lpstrFilter = filStr;
 	osDlgProp.lpstrFile = name;
-	
+
 	osDlgProp.Flags = OFN_EXPLORER | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 	if (GetOpenFileName(&osDlgProp))
 	{
@@ -1541,16 +1541,16 @@ void MainWindow::StartCanAn(void)
 	unsigned int i;
 	CanAn analyzer;
 	int mCol, rCnt, cCnt, sCnt;
-	
+
 	if (fileType != FILETYPE_DATA)
 		return;
 	if (!AskSave())
 		return;
-	
+
 	for (mCol = sizeof(gFactCols) / sizeof(char*) - 1; mCol >= 0; --mCol)
 		if (gFactCols[mCol] == STR_COL_FACTIVE)
 			break;
-	
+
 	f = 0;
 	rCnt = factGrid.GetRowsCount();
 	for (r = 1; r < rCnt; ++r)
@@ -1559,17 +1559,17 @@ void MainWindow::StartCanAn(void)
 			continue;
 		++f;
 	}
-	
+
 	r = setGrid.GetRowsCount()-1;
 	if (r < 2 || f < 1)
 	{
 		MessageBox(wndHandle, STR_MSG_NOINFO, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONWARNING);
 		return;
 	}
-	
+
 	analyzer.SetSetCount(r);
 	analyzer.SetFactCount(f);
-	
+
 	f = 0;
 	rCnt = factGrid.GetRowsCount();
 	cCnt = factGrid.GetColsCount();
@@ -1577,7 +1577,7 @@ void MainWindow::StartCanAn(void)
 	{
 		if (factGrid.GetCellMark(r, mCol) != GWCM_MARKV)
 			continue;
-		
+
 		for (c = 0; c < cCnt; ++c)
 			if (gFactCols[c] == STR_COL_NAME)
 				analyzer.SetFactName(f, factGrid.GetCell(r, c));
@@ -1594,7 +1594,7 @@ void MainWindow::StartCanAn(void)
 			}
 		++f;
 	}
-	
+
 	sCnt = sizeof(gSetCols) / sizeof(char*) - 1;
 	rCnt = setGrid.GetRowsCount();
 	cCnt = setGrid.GetColsCount();
@@ -1625,13 +1625,13 @@ void MainWindow::StartCanAn(void)
 				}
 				analyzer.SetVol(r-1, i);
 			}
-		
+
 		f = 0;
 		for (; c < cCnt; ++c)
 		{
 			if (factGrid.GetCellMark(c-sCnt+1, mCol) != GWCM_MARKV)
 				continue;
-			
+
 			if (!ReadDouble(&setGrid, r, c, &d))
 			{
 				MessageBox(wndHandle, STR_MSG_BADVAL, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONWARNING);
@@ -1643,7 +1643,7 @@ void MainWindow::StartCanAn(void)
 			++f;
 		}
 	}
-	
+
 	sCnt = sizeof(gCorCols) / sizeof(char*);
 	cCnt = corGrid.GetColsCount();
 	rCnt = corGrid.GetRowsCount();
@@ -1652,13 +1652,13 @@ void MainWindow::StartCanAn(void)
 	{
 		if (factGrid.GetCellMark(r, mCol) != GWCM_MARKV)
 			continue;
-		
+
 		f = 0;
 		for (c = sCnt; c < sCnt+r; ++c)
 		{
 			if (factGrid.GetCellMark(c-sCnt+1, mCol) != GWCM_MARKV)
 				continue;
-			
+
 			if (!ReadDouble(&corGrid, r, c, &d))
 			{
 				MessageBox(wndHandle, STR_MSG_BADVAL, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONWARNING);
@@ -1671,19 +1671,19 @@ void MainWindow::StartCanAn(void)
 		}
 		++i;
 	}
-	
+
 	analyzer.StartAnalysis();
 	do
 		Sleep(100);
 	while (analyzer.AnalysisActive());
-	
+
 	r = analyzer.GetVarCount();
 	c = analyzer.GetSetCount();
 	f = analyzer.GetFactCount();
 	varGrid.SetSizes(f + sizeof(gVarRows) / sizeof(char*), r+1);
 	stdGrid.SetSizes(f + sizeof(gStdRows) / sizeof(char*), r+1);
 	pntGrid.SetSizes(c+1, r + sizeof(gPntCols) / sizeof(char*) - 1);
-	
+
 	sCnt = sizeof(gVarRows) / sizeof(char*);
 	rCnt = varGrid.GetRowsCount();
 	cCnt = varGrid.GetColsCount();
@@ -1701,7 +1701,7 @@ void MainWindow::StartCanAn(void)
 		for (; r < rCnt; ++r)
 			PrintDouble(&varGrid, r, c, analyzer.GetVarCoef(c-1, r-sCnt));
 	}
-	
+
 	sCnt = sizeof(gStdRows) / sizeof(char*);
 	rCnt = stdGrid.GetRowsCount();
 	cCnt = stdGrid.GetColsCount();
@@ -1719,7 +1719,7 @@ void MainWindow::StartCanAn(void)
 		for (; r < rCnt; ++r)
 			PrintDouble(&stdGrid, r, c, analyzer.GetStdCoef(c-1, r-sCnt));
 	}
-	
+
 	sCnt = sizeof(gPntCols) / sizeof(char*) - 1;
 	rCnt = pntGrid.GetRowsCount();
 	cCnt = pntGrid.GetColsCount();
@@ -1733,11 +1733,11 @@ void MainWindow::StartCanAn(void)
 		for (; c < cCnt; ++c)
 			PrintDouble(&pntGrid, r, c, analyzer.GetSetCoord(r-1, c-sCnt));
 	}
-	
+
 	SetVarGridsFixedCells(true, true, true);
 	SetFileType(FILETYPE_RESULT);
 	SetWorkFile(NULL);
-	
+
 	changed = true;
 	UpdateTitle();
 }
@@ -1745,7 +1745,7 @@ void MainWindow::StartCanAn(void)
 void MainWindow::InitTabCtrl(void)
 {
 	HINSTANCE hInst;
-	
+
 	hInst = (HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE);
 	tabCtrl = CreateWindow(WC_TABCONTROL, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 0, 0, 100, 100, wndHandle, 0, hInst, NULL);
 }
@@ -1756,7 +1756,7 @@ void MainWindow::InitGridsFont(void)
 	{
 		HDC hDC;
 		int size;
-		
+
 		if (!(hDC = GetDC(wndHandle)))
 			size = -13;
 		else
@@ -1764,14 +1764,14 @@ void MainWindow::InitGridsFont(void)
 			size = -MulDiv(10, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 			ReleaseDC(wndHandle, hDC);
 		}
-		
+
 		gFont = CreateFont(size, 0, 0, 0, 0, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Arial");
 	}
-	
+
 	factGrid.SetFont(gFont);
 	setGrid.SetFont(gFont);
 	corGrid.SetFont(gFont);
-	
+
 	varGrid.SetFont(gFont);
 	stdGrid.SetFont(gFont);
 	pntGrid.SetFont(gFont);
@@ -1781,20 +1781,20 @@ void MainWindow::InitClass(HINSTANCE hInst)
 {
 	WNDCLASS wndClass;
 	if (classReady) return;
-	
+
 	wndClass.cbClsExtra = 0;
     wndClass.hInstance = hInst;
     wndClass.lpszMenuName = NULL;
     wndClass.style = CS_HREDRAW | CS_VREDRAW;
 	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	
+
 	wndClass.cbWndExtra = sizeof(LONG_PTR);
     wndClass.lpfnWndProc = WinWndClasserProc;
 	wndClass.lpszClassName = CN_MW_CLASSNAME;
-	
+
 	wndClass.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
 	wndClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(ICON_MAIN));
-	
+
 	if (RegisterClass(&wndClass)) classReady = true;
 }
 
@@ -1811,42 +1811,43 @@ LRESULT MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 BOOL CALLBACK DelAddDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static int *result;
-	
+
 	HICON mainIcon;
 	CN_DIALOG_DATA *dlgProp;
-	
+
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
 		dlgProp = (CN_DIALOG_DATA*) lParam;
-		
+
 		mainIcon = (HICON) LoadImage((HINSTANCE) GetWindowLong(hWnd, GWL_HINSTANCE), MAKEINTRESOURCE(ICON_MAIN), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 		SendDlgItemMessage(hWnd, DELADD_NUMEDIT_ID, EM_LIMITTEXT, dlgProp->maxLength, 0);
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) mainIcon);
 		SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM) dlgProp->dlgTitle);
 		SetDlgItemText(hWnd, DELADD_TEXT_ID, dlgProp->wndDesc);
-		
+
 		if ((result = &(dlgProp->inpValue)))
 			*result = 0;
 		return TRUE;
-	
+
 	case WM_COMMAND:
 		switch (LOWORD(wParam))
 		{
 		case IDOK:
 			if (result)
 				*result = GetDlgItemInt(hWnd, DELADD_NUMEDIT_ID, NULL, FALSE);
+			[[fallthrough]];
 		case IDCANCEL:
 			EndDialog(hWnd, LOWORD(wParam));
 			return TRUE;
 		}
 		break;
-	
+
 	case WM_CLOSE:
 		EndDialog(hWnd, IDCANCEL);
 		return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -1859,23 +1860,23 @@ BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	HFONT eFont;
 	HICON mainIcon;
 	CN_DIALOG_DATA *dlgProp;
-	
+
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
 		len = strlen(STR_TITLE_MAINWINDOW) + strlen(STR_VERSION) + 4;
 		dlgProp = (CN_DIALOG_DATA*) lParam;
 		str = new char [len];
-		
+
 		mainIcon = (HICON) LoadImage((HINSTANCE) GetWindowLong(hWnd, GWL_HINSTANCE), MAKEINTRESOURCE(ICON_MAIN), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 		len = sprintf(str, "%s %s", STR_TITLE_MAINWINDOW, STR_VERSION);
 		str[len] = 0;
-		
+
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) mainIcon);
 		SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM) dlgProp->dlgTitle);
 		SetDlgItemText(hWnd, ABOUT_TEXT_ID, dlgProp->wndDesc);
 		SetDlgItemText(hWnd, ABOUT_PROGINFO_ID, str);
-		
+
 		if (!(hDC = GetDC(hWnd)))
 			size = -32;
 		else
@@ -1883,41 +1884,41 @@ BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			size = -MulDiv(24, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 			ReleaseDC(hWnd, hDC);
 		}
-		
+
 		eFont = CreateFont(size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Times New Roman");
 		SendDlgItemMessage(hWnd, ABOUT_PROGINFO_ID, WM_SETFONT, (WPARAM) eFont, 0);
-		
+
 		mainIcon = (HICON) LoadImage((HINSTANCE) GetWindowLong(hWnd, GWL_HINSTANCE), MAKEINTRESOURCE(ICON_MAIN), IMAGE_ICON, 48, 48, LR_DEFAULTCOLOR);
 		SendDlgItemMessage(hWnd, ABOUT_ICON_ID, STM_SETICON, (WPARAM) mainIcon, 0);
-		
+
 		delete[] str;
 		return TRUE;
-	
+
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK)
 		{
 			eFont = (HFONT) SendDlgItemMessage(hWnd, ABOUT_PROGINFO_ID, WM_GETFONT, 0, 0);
 			SendDlgItemMessage(hWnd, ABOUT_PROGINFO_ID, WM_SETFONT, (WPARAM) NULL, 0);
-			
+
 			if (eFont)
 				DeleteObject(eFont);
-			
+
 			EndDialog(hWnd, IDOK);
 			return TRUE;
 		}
 		break;
-	
+
 	case WM_CLOSE:
 		eFont = (HFONT) SendDlgItemMessage(hWnd, ABOUT_PROGINFO_ID, WM_GETFONT, 0, 0);
 		SendDlgItemMessage(hWnd, ABOUT_PROGINFO_ID, WM_SETFONT, (WPARAM) NULL, 0);
-		
+
 		if (eFont)
 			DeleteObject(eFont);
-		
+
 		EndDialog(hWnd, IDCANCEL);
 		return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -1929,18 +1930,18 @@ bool SaveGridData(GridWindow* grid, HANDLE hFile, int fstCol /* = 1 */)
 	const char *cell;
 	unsigned int mark;
 	int i, j, rows, cols;
-	
+
 	if (!grid || !hFile)
 		return false;
-	
+
 	rows = grid->GetRowsCount();
 	cols = grid->GetColsCount();
-	
+
 	if (!WriteBuf(hFile, &rows, sizeof(rows)))
 		return false;
 	if (!WriteBuf(hFile, &cols, sizeof(cols)))
 		return false;
-	
+
 	for (i = 1; i < rows; ++i)
 	{
 		for (j = fstCol; j < cols; ++j)
@@ -1974,29 +1975,29 @@ bool LoadGridData(GridWindow* grid, HANDLE hFile, int fstCol /* = 1 */)
 	size_t len;
 	unsigned int mark;
 	int i, j, rows, cols;
-	
+
 	if (!grid || !hFile)
 		return false;
-	
+
 	if (!ReadBuf(hFile, &rows, sizeof(rows)))
 		return false;
 	if (!ReadBuf(hFile, &cols, sizeof(cols)))
 		return false;
-	
+
 	for (i = 1; i < rows; ++i)
 	{
 		for (j = fstCol; j < cols; ++j)
 		{
 			if (!ReadBuf(hFile, &len, sizeof(len)))
 				return false;
-			
+
 			if (!len)
 				grid->SetCell(i, j, NULL);
 			else if (len == (size_t) -1)
 			{
 				if (!ReadBuf(hFile, &mark, sizeof(mark)))
 					return false;
-				
+
 				grid->SetCellMark(i, j, mark);
 			}
 			else
@@ -2007,7 +2008,7 @@ bool LoadGridData(GridWindow* grid, HANDLE hFile, int fstCol /* = 1 */)
 					delete[] cell;
 					return false;
 				}
-				
+
 				cell[len] = 0;
 				grid->SetCell(i, j, cell);
 				delete[] cell;
@@ -2021,32 +2022,32 @@ bool SaveGridSizes(GridWindow* grid, HANDLE hFile)
 {
 	int i, num;
 	unsigned int val;
-	
+
 	if (!grid || !hFile)
 		return false;
-	
+
 	num = grid->GetColsCount();
 	if (!WriteBuf(hFile, &num, sizeof(num)))
 		return false;
-	
+
 	for (i = 0; i < num; ++i)
 	{
 		val = grid->GetColWidth(i);
 		if (!WriteBuf(hFile, &val, sizeof(val)))
 			return false;
 	}
-	
+
 	num = grid->GetRowsCount();
 	if (!WriteBuf(hFile, &num, sizeof(num)))
 		return false;
-	
+
 	for (i = 0; i < num; ++i)
 	{
 		val = grid->GetRowHeight(i);
 		if (!WriteBuf(hFile, &val, sizeof(val)))
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -2054,10 +2055,10 @@ bool LoadGridSizes(GridWindow* grid, HANDLE hFile)
 {
 	int i, num;
 	unsigned int val;
-	
+
 	if (!grid || !hFile)
 		return false;
-	
+
 	if (!ReadBuf(hFile, &num, sizeof(num)))
 		return false;
 	for (i = 0; i < num; ++i)
@@ -2066,7 +2067,7 @@ bool LoadGridSizes(GridWindow* grid, HANDLE hFile)
 			return false;
 		grid->SetColWidth(i, val);
 	}
-	
+
 	if (!ReadBuf(hFile, &num, sizeof(num)))
 		return false;
 	for (i = 0; i < num; ++i)
@@ -2075,7 +2076,7 @@ bool LoadGridSizes(GridWindow* grid, HANDLE hFile)
 			return false;
 		grid->SetRowHeight(i, val);
 	}
-	
+
 	return true;
 }
 
@@ -2085,15 +2086,15 @@ void ChangeDecSep(GridWindow *grid, int r, int c)
 	const char *cell;
 	char *buf;
 	bool need;
-	
+
 	if (!grid || !(cell = grid->GetCell(r, c)))
 		return;
-	
+
 	len = strlen(cell);
 	buf = new char [len+1];
 	memcpy(buf, cell, len);
 	buf[len] = 0;
-	
+
 	need = false;
 	for (i = 0; i < len; ++i)
 	{
@@ -2108,7 +2109,7 @@ void ChangeDecSep(GridWindow *grid, int r, int c)
 			need = true;
 		}
 	}
-	
+
 	if (need)
 		grid->SetCell(r, c, buf);
 	delete[] buf;
@@ -2120,22 +2121,22 @@ bool ReadDouble(GridWindow *grid, int r, int c, double *val)
 	unsigned int i, len, read;
 	const char *cell;
 	char *buf;
-	
+
 	if (!val || !grid || !(cell = grid->GetCell(r, c)))
 		return false;
-	
+
 	len = strlen(cell);
 	buf = new char [len+1];
 	memcpy(buf, cell, len);
 	buf[len] = 0;
-	
+
 	for (i = 0; i < len; ++i)
 		if (buf[i] == ',')
 			buf[i] = '.';
-	
+
 	sscanf(buf, "%lf%n", val, &read);
 	delete[] buf;
-	
+
 	return (read == len);
 }
 
@@ -2143,10 +2144,10 @@ bool ReadUnsignedInt(GridWindow *grid, int r, int c, unsigned int *val)
 {
 	const char *cell;
 	unsigned int len;
-	
+
 	if (!val || !grid || !(cell = grid->GetCell(r, c)))
 		return false;
-	
+
 	sscanf(cell, "%u%n", val, &len);
 	return (len == strlen(cell));
 }
@@ -2154,10 +2155,10 @@ bool ReadUnsignedInt(GridWindow *grid, int r, int c, unsigned int *val)
 void PrintDouble(GridWindow *grid, int r, int c, double val)
 {
 	char text[64];
-	
+
 	if (!grid)
 		return;
-	
+
 	sprintf(text, "%.5lf", val);
 	grid->SetCell(r, c, text);
 }
@@ -2165,10 +2166,10 @@ void PrintDouble(GridWindow *grid, int r, int c, double val)
 void PrintUnsignedInt(GridWindow *grid, int r, int c, unsigned int val)
 {
 	char text[64];
-	
+
 	if (!grid)
 		return;
-	
+
 	sprintf(text, "%u", val);
 	grid->SetCell(r, c, text);
 }

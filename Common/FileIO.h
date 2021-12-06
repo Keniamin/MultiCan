@@ -5,7 +5,7 @@ static bool ReadBuf(HANDLE hFile, const void* val, DWORD size, bool *wasEOF = NU
 {
 	unsigned char* buf;
 	DWORD read, cur;
-	
+
 	if (wasEOF)
 		*wasEOF = false;
 	buf = (unsigned char*) val;
@@ -25,7 +25,7 @@ static bool WriteBuf(HANDLE hFile, const void* val, DWORD size)
 {
 	unsigned char* buf;
 	DWORD wrote, cur;
-	
+
 	buf = (unsigned char*) val;
 	for (cur = 0; cur < size; cur += wrote)
 		if (!WriteFile(hFile, buf+cur, size-cur, &wrote, NULL) || wrote == 0)

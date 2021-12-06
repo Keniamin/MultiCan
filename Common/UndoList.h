@@ -15,19 +15,19 @@ class UndoList
 {
 private:
 	List list;
-	
+
 public:
 	~UndoList() {}
 	UndoList(): list() {}
-	
+
 	void Undo(void);
 	void Redo(void);
 	void Clear(void);
 	void Add(UndoListElem *operation);
-	
+
 	bool CanRedo(void) { return (list.GetCur() != NULL); }
 	bool CanUndo(void) { return (list.GetNext() != NULL); }
-	
+
 	const UndoListElem* GetRedo(void) { return ((UndoListElem*) list.GetCur()); }
 	const UndoListElem* GetUndo(void) { return ((UndoListElem*) list.GetNext()); }
 };

@@ -8,19 +8,19 @@ class CmdLine
 private:
 	int nArg;
 	char** args;
-	
+
 	void ClearArgs(void);
 	void ParceCmdLine(const char *command_line);
 	int CountCmdLine(const char *command_line, int *max_arg_len);
-	
+
 public:
 	CmdLine(const char* str): nArg(0), args(NULL) { *this = str; }
 	CmdLine(void): nArg(0), args(NULL) {}
 	~CmdLine(void) { ClearArgs(); }
-	
+
 	const char* operator [] (int argument_number) const;
 	void operator = (const char *command_line);
-	
+
 	int count(void) const { return nArg; }
 };
 
@@ -34,7 +34,7 @@ void CmdLine::ClearArgs(void)
 		args = NULL;
 	}
 }
-	
+
 const char* CmdLine::operator [] (int i) const
 {
 	if (i < 0 || i >= nArg)
@@ -45,7 +45,7 @@ const char* CmdLine::operator [] (int i) const
 void CmdLine::operator = (const char *str)
 {
 	int i, aLen;
-	
+
 	ClearArgs();
 	nArg = CountCmdLine(str, &aLen);
 	if (nArg > 0)
@@ -62,7 +62,7 @@ void CmdLine::ParceCmdLine(const char *str)
 {
 	int i, len, num;
 	bool inQuote;
-	
+
 	i = 0;
 	len = 0;
 	num = 0;
@@ -105,7 +105,7 @@ int CmdLine::CountCmdLine(const char *str, int *maxArgLen)
 	int i, len;
 	bool inQuote;
 	int argsCount, argLen;
-	
+
 	len = 0;
 	argLen = 0;
 	argsCount = 0;
@@ -143,7 +143,7 @@ int CmdLine::CountCmdLine(const char *str, int *maxArgLen)
 			}
 		}
 	}
-	
+
 	if (maxArgLen) *maxArgLen = argLen;
 	return argsCount;
 }

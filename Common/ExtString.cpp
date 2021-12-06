@@ -60,11 +60,11 @@ void ExtString::Ensure(size_t length)
 	char *tmp;
 	if (length <= cap)
 		return;
-	
+
 	do
 		cap += memBlock;
 	while (cap < length);
-	
+
 	tmp = new char [cap];
 	if (str)
 	{
@@ -80,7 +80,7 @@ void ExtString::Append(const char *arr, size_t length)
 	if (len < 0)
 		len = 0;
 	Ensure(len+length+1);
-	
+
 	memcpy(str+len, arr, length * sizeof(char));
 	len += length;
 	str[len] = 0;

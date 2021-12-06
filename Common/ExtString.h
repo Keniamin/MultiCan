@@ -7,30 +7,30 @@ class ExtString
 {
 private:
 	static const size_t memBlock = 4096;
-	
+
 	size_t cap;
 	char *str;
 	int len;
-	
+
 	void Clear(void);
 	void Ensure(size_t length);
-	
+
 	void Append(const char *arr, size_t length);
-	
+
 public:
 	~ExtString() { if (str) delete[] str; }
 	ExtString(): cap(0), str(NULL), len(0) {}
 	ExtString(const char* s): cap(0), str(NULL), len(0) { *this = s; }
 	ExtString(const ExtString& s): cap(0), str(NULL), len(0) { *this = s; }
-	
+
 	const ExtString& operator += (char symbol);
-	
+
 	const ExtString& operator = (const char *array);
 	const ExtString& operator += (const char *array);
-	
+
 	const ExtString& operator = (const ExtString& string);
 	const ExtString& operator += (const ExtString& string);
-	
+
 	int Length(void) { return len; }
 	operator const char*(void) { return str; }
 	char& operator [] (int i) { return *(str+i); }

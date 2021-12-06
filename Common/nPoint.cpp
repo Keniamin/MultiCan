@@ -30,16 +30,16 @@ nVector::nVector(int dim, const double* arr /* = NULL */):
 void nVector::Redim(int dim)
 {
 	double *old;
-	
+
 	old = x;
 	if (dim > 0)
 		x = new double[dim];
 	else
 		x = NULL;
-	
+
 	for (int i = 0; i < dim; ++i)
 		x[i] = ((i < n) ? old[i] : 0);
-	
+
 	n = dim;
 	if (old)
 		delete[] old;
@@ -61,7 +61,7 @@ const nVector& nVector::operator =(const nVector& P)
 		x = new double[n];
 	else
 		x = NULL;
-	
+
 	for (int i = 0; i < n; ++i)
 		x[i] = P.x[i];
 	return *this;
@@ -94,7 +94,7 @@ void nVector::Print(FILE* fd /* = NULL */) const
 	int i;
 	if (fd == NULL)
 		fd = stdout;
-	
+
 	fprintf(fd, "(");
 	for (i = 0; i < n; ++i)
 	{

@@ -10,27 +10,27 @@ class nVector
 private:
 	double *x;
 	int n;
-	
+
 public:
-	
+
 	~nVector(void);
 	nVector(const nVector&);
 	nVector(int, const double* = NULL);
 	nVector(void): x(NULL), n(0) {}
-	
+
 	void Redim(int);
-	
+
 	const nVector& operator *= (double);
 	const nVector& operator = (const nVector&);
 	const nVector& operator += (const nVector&);
 	const nVector& operator -= (const nVector&);
-	
+
 	void Print(FILE* = NULL) const;
-	
+
 	int Dim(void) { return n; }
 	double& operator [] (int i) { return *(x+i); }
 	double operator [] (int i) const { if (i < 0 || i >= n) return 0; return x[i]; }
-	
+
 	friend nVector operator - (const nVector&);
 	friend double scal(const nVector&, const nVector&);
 };

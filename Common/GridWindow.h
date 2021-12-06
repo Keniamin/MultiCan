@@ -65,23 +65,23 @@ class GridCell
 private:
 	static const int markPadding = 2;
 	static const int markSize = 11;
-	
+
 	char *text;
 	unsigned int prop;
 	unsigned int mark;
 	COLORREF textColor, cellColor, selColor, markBoxColor;
-	
+
 	void InitColors(void);
-	
+
 	friend class GridWindow;
 	friend class GridUndoOperation;
-	
+
 public:
 	GridCell(void);
 	~GridCell(void) { if (text) delete[] text; }
-	
+
 	void Grab(GridCell*);
-	
+
 	bool SwitchMark(void);
 	void DrawCellText(HDC device_context, const RECT& cell) const;
 	void DrawCell(HDC device_context, const RECT& cell, bool selected) const;
@@ -92,145 +92,145 @@ class GridWindow
 private:
 	static const size_t maxCells = 2097152;
 	static const int maxRowsCols = 8192;
-	
+
 	static const int minScrollTime = 175;
 	static const int defRowHeight = 20;
 	static const int defColWidth = 75;
 	static const int defEditSize = 25;
 	static const int scrollBorder = 5;
 	static const int defSize = 150;
-	
+
 	static bool classReady;
-	
+
 	HWND wndHandle, editWnd;
 	HWND horBar, vertBar;
 	HMENU popMenu;
-	
+
 	HFONT gridFont;
 	HPEN borderPen, selPen;
 	HCURSOR curHor, curVert;
-	
+
 	bool inFocus, dblClick, canScroll;
 	unsigned char moveMode;
 	int dragNum, dragStart;
-	
+
 	int nCols, nRows;
 	GridCell *cells;
-	
+
 	unsigned int *colsWidth, *rowsHeight;
 	int fstVisRow, fstVisCol;
 	int addSelRow, addSelCol;
 	int selRow, selCol;
 	int wheelDelta;
-	
+
 	UndoList undoList;
-	
+
 	void CheckVis(void);
 	void CheckPos(void);
 	void CheckSel(void);
-	
+
 	void DeleteCells(void);
 	void EnsureCells(void);
-	
+
 	int GetColByCoord(int x);
 	int GetRowByCoord(int y);
 	void ShowCell(int row, int col);
-	
+
 	void SendUndoNotify(void);
 	void SendChangeNotify(int row, int col);
-	
+
 	void PageUp(int *row);
 	void PageDown(int *row);
 	void PageLeft(int *col);
 	void PageRight(int *col);
-	
+
 	bool FindUp(int *row, int *col, unsigned int skip_mask, bool can_change_col = false);
 	bool FindDown(int *row, int *col, unsigned int skip_mask, bool can_change_col = false);
 	bool FindLeft(int *row, int *col, unsigned int skip_mask, bool can_change_row = false);
 	bool FindRight(int *row, int *col, unsigned int skip_mask, bool can_change_row = false);
-	
+
 	void AddUndoOp(bool internal, int row, int col, char type, bool new_operation);
 	void BeginModify(const char *initial_text = NULL);
 	void EndModify(void);
-	
+
 	void DrawWindow(void);
 	void ResizeWindow(void);
 	void ShowMenu(int x, int y);
 	void MouseMove(DWORD keys, int x, int y);
 	void MouseClick(DWORD keys, int x, int y);
-	
+
 	void KeyDown(int key, int repeats);
 	void KeyChar(char key, int repeats);
-	
+
 	void UndoCmd(void);
 	void RedoCmd(void);
-	
+
 	void CopyCmd(void);
 	void ClearCmd(void);
 	void PasteCmd(void);
-	
+
 	void ParseText(char *text);
 	void MakeText(ExtString *string);
 	void MakeHTML(ExtString *string);
-	
+
 	void InitEditBox(void);
 	void InitScrollBar(void);
 	void InitClass(HINSTANCE);
-	
+
 	void ClientToPaintRect(RECT *client_rect) const;
-	
+
 	bool haveCells(void) const { return (nRows > 0 && nCols > 0); }
-	
+
 	friend class GridUndoOperation;
-	
+
 public:
 	GridWindow(void);
 	~GridWindow(void);
-	
+
 	bool Create(HWND);
 	void Destroy(void);
 	void DestroyAll(void);
 	LRESULT WindowProc(HWND, UINT, WPARAM, LPARAM);
 	void Redraw(int *from_x = NULL, int *from_y = NULL);
-	
+
 	void DeleteRow(int row);
 	void DeleteCol(int col);
 	void AddRow(int new_row);
 	void AddCol(int new_col);
-	
+
 	void SetRowsCount(int new_rows_count);
 	void SetColsCount(int new_cols_count);
 	void SetSizes(int new_rows_count, int new_cols_count);
-	
+
 	unsigned int GetColWidth(int col);
 	unsigned int GetRowHeight(int row);
 	void SetColWidth(int col, unsigned int width);
 	void SetRowHeight(int row, unsigned int height);
-	
+
 	const char* GetCell(int row, int col);
 	void SetCell(int row, int col, const char *value);
-	
+
 	COLORREF GetCellColor(int row, int col);
 	COLORREF GetCellTextColor(int row, int col);
 	void SetCellColor(int row, int col, COLORREF color);
 	void SetCellTextColor(int row, int col, COLORREF color);
-	
+
 	unsigned int GetCellProp(int row, int col);
 	void SetCellProp(int row, int col, unsigned int properties);
-	
+
 	unsigned int GetCellMark(int row, int col);
 	void SetCellMark(int row, int col, unsigned int mark);
-	
+
 	void SelectCells(int row, int col, int additional_rows_selected, int additional_cols_selected, bool show_cells = false);
-	
+
 	operator HWND() { return wndHandle; }
-	
+
 	int GetColsCount(void) const { return nCols; }
 	int GetRowsCount(void) const { return nRows; }
-	
+
 	HFONT ClearFont(void) { return SetFont(NULL); }
 	HFONT SetFont(HFONT font) { HFONT tmp = gridFont; gridFont = font; return tmp; }
-	
+
 	void SaveToUndo(int row, int col, char type, bool new_operation = true) { AddUndoOp(false, row, col, type, new_operation); }
 };
 
@@ -287,7 +287,7 @@ inline const char* GridWindow::GetCell(int i, int j)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	return cells[index].text;
 }
@@ -300,7 +300,7 @@ inline void GridWindow::SetCell(int i, int j, const char *val)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	if (cells[index].text)
 		delete[] cells[index].text;
@@ -322,7 +322,7 @@ inline COLORREF GridWindow::GetCellColor(int i, int j)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	return cells[index].cellColor;
 }
@@ -335,7 +335,7 @@ inline COLORREF GridWindow::GetCellTextColor(int i, int j)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	return cells[index].textColor;
 }
@@ -348,7 +348,7 @@ inline void GridWindow::SetCellColor(int i, int j, COLORREF color)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	cells[index].cellColor = color;
 	cells[index].InitColors();
@@ -362,7 +362,7 @@ inline void GridWindow::SetCellTextColor(int i, int j, COLORREF color)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	cells[index].textColor = color;
 }
@@ -375,7 +375,7 @@ inline unsigned int GridWindow::GetCellProp(int i, int j)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	return cells[index].prop;
 }
@@ -388,12 +388,12 @@ inline void GridWindow::SetCellProp(int i, int j, unsigned int prop)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	if (!(prop & GWCA_VMASK))
 		prop |= (GWCP_NORMAL & GWCA_VMASK);
 	if (!(prop & GWCA_HMASK))
 		prop |= (GWCP_NORMAL & GWCA_HMASK);
-	
+
 	EnsureCells();
 	cells[index].prop = prop;
 }
@@ -406,7 +406,7 @@ inline unsigned int GridWindow::GetCellMark(int i, int j)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	return (cells[index].mark << GWCM_MARKBASE);
 }
@@ -419,7 +419,7 @@ inline void GridWindow::SetCellMark(int i, int j, unsigned int mark)
 	index = nCols;
 	index *= i;
 	index += j;
-	
+
 	EnsureCells();
 	cells[index].mark = mark >> GWCM_MARKBASE;
 }
