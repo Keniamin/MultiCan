@@ -13,6 +13,8 @@ add_executable(${PROJECT_NAME}
     MultiCan/Resources.rc
 )
 
+add_compile_definitions(_LANG_RUS)
+
 target_link_libraries(${PROJECT_NAME}
     -mwindows
     -static-libgcc

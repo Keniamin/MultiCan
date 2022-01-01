@@ -3,5 +3,5 @@
 #elif defined(_LANG_RUS)
 	#include "../Languages/Russian.h"
 #else
-	#include "../Languages/Russian.h"
+	#error "Language variable is not set"
 #endif

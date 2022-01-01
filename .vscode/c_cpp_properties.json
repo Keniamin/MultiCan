@@ -6,7 +6,9 @@
                 "${workspaceFolder}/**",
                 "C:\\mingw-w64\\mingw32\\include"
             ],
-            "defines": [],
+            "defines": [
+                "_LANG_RUS"
+            ],
             "compilerPath": "C:\\mingw-w64\\mingw32\\bin\\gcc.exe",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
