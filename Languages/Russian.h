@@ -16,10 +16,10 @@
 
 
 #define STR_MENUITEM_ADDFACT "Добавить &признаки..."
-#define STR_MENUITEM_DELFACT "Удалить п&ризнак..."
+#define STR_MENUITEM_DELFACT "Удалить п&ризнаки..."
 
 #define STR_MENUITEM_ADDSET "Добавить &выборки..."
-#define STR_MENUITEM_DELSET "Удалить вы&борку..."
+#define STR_MENUITEM_DELSET "Удалить вы&борки..."
 
 
 #define STR_MENUITEM_CANAN "&Канонический анализ\tCtrl+1"
@@ -37,8 +37,9 @@ static const char STR_TAB_SET[] = "Выборки";
 static const char STR_TAB_COR[] = "Корреляционная матрица";
 
 static const char STR_TAB_VAR[] = "Канонические переменные";
-static const char STR_TAB_STD[] = "Нагрузки на векторы";
+static const char STR_TAB_STD[] = "Стандартизованные коэффициенты дискриминантной функции";
 static const char STR_TAB_PNT[] = "Положения выборок";
+static const char STR_TAB_DIST[] = "Матрица расстояний Махаланобиса";
 
 
 static const char STR_MSG_WANTSAVE[] = "Текущий файл не сохранен!\nХотите сохранить измененя?";
@@ -46,8 +47,6 @@ static const char STR_MSG_BADVAL[] = "Анализ не может быть выполнен! Среди входн
 static const char STR_MSG_NOINFO[] = "Недостаточно информации для анализа! Количество выборок должно быть не меньше 2, а количество активных признаков не меньше 1.";
 static const char STR_MSG_OPENERROR[] = "Невозможно открыть файл! Возможно, файл недоступен или имеет неизвестный формат.\nУбедитесь в корректности файла и повторите попытку позже.";
 static const char STR_MSG_SAVEERROR[] = "Невозможно сохранить данные! Возможно, файл недоступен или защищен от записи.\nСохраните данные под другим именем или повторите попытку позже.";
-static const char STR_MSG_BADSETNUM[] = "Неправильный номер выборки! Выборки с таким номером не существует.\nВведите число от единицы до количества выборок.";
-static const char STR_MSG_BADFACTNUM[] = "Неправильный номер признака! Признака с таким номером не существует.\nВведите число от единицы до количества признаков.";
 
 
 static const char STR_COL_NAME[] = "Имя";
@@ -86,11 +85,28 @@ static const char STR_TITLE_ABOUTDLG[] = "О программе";
 static const char STR_TITLE_ADDDLG[] = "Добавить";
 static const char STR_TITLE_DELDLG[] = "Удалить";
 
+static const char STR_TITLE_PATTERNERROR[] = "Ошибка ввода";
 
-static const char STR_DLG_DELSET[] = "&Номер удаляемой выборки";
-static const char STR_DLG_DELFACT[] = "&Номер удаляемого признака";
+
 static const char STR_DLG_ADDSET[] = "&Количество добавляемых выборок";
 static const char STR_DLG_ADDFACT[] = "&Количество добавляемых признаков";
+
+static const char STR_DLG_ADDPATTERN[] = "0123456789";
+static const char STR_DLG_ADDERROR[] = "Введите число от 1 до 999";
+
+
+static const char STR_DLG_DELSET[] = "&Номера удаляемых выборок\n(список чисел или диапазонов)";
+static const char STR_DLG_DELFACT[] = "&Номера удаляемых признаков\n(список чисел или диапазонов)";
+
+static const char STR_DLG_DELPATTERN[] = "0123456789;,-";
+static const char STR_DLG_DELERROR[] = "Введите номера или диапазоны, например \"1-7,12,25-26\"";
+
+static const char STR_INVALID_INTERVAL[] = "Некорректный формат диапазона! Ожидается отдельное число или два числа через тире.\nОшибочное значение: ";
+static const char STR_INVALID_INTERVAL_CHAR[] = "Некорректный символ в диапазоне! Границы диапазонов должны быть положительными числами.\nОшибочное значение: ";
+static const char STR_INVALID_INTERVAL_ORDER[] = "Некорректный порядок чисел в диапазоне! Конец интервала не должен быть меньше начала.\nОшибочное значение: ";
+static const char STR_INTERVAL_OVERFLOW[] = "Некорректный диапазон! Границы диапазона должны быть от единицы до количества объектов.\nОшибочное значение: ";
+static const char STR_INTERVALS_OVERLAP[] = "Введённые диапазоны пересекаются! Пожалуйста, введите независимые диапазоны.";
+
 
 static const char STR_DLG_ABOUT[] = "\
 Программа поставляется на условиях \"as is\" (\"как есть\"), вся ответственность за последствия её применения лежит на конечном пользователе.\r\n\r\n\

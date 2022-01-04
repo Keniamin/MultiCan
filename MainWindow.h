@@ -1,6 +1,7 @@
 #ifndef _MULTICAN_MAINWINDOW_H
 #define _MULTICAN_MAINWINDOW_H
 
+#include <vector>
 #include <windows.h>
 #include <commctrl.h>
 
@@ -45,8 +46,11 @@ private:
 	void SetVarGridsFixedCells(bool var_grid, bool std_grid, bool pnt_grid, bool set_sizes = true);
 	void SetDataGridsFixedCells(bool fact_grid, bool set_grid, bool cor_grid, bool set_sizes = true);
 
-	void DeleteSet(int number);
-	void DeleteFactor(int number);
+	void ShowIntervalError(const char *msg, const char *interval);
+	std::vector<std::pair<unsigned int, unsigned int>> ParseIntervals(const char *intervals_string, unsigned int item_count);
+
+	void DeleteSets(const char *intervals_string);
+	void DeleteFactors(const char *intervals_string);
 	void AddSets(unsigned int count);
 	void AddFactors(unsigned int count);
 

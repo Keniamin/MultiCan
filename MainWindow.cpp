@@ -1,5 +1,7 @@
 #include <cstdio>
+#include <cstdlib>
 #include <shlobj.h>
+#include <algorithm>
 #include <windows.h>
 #include <commctrl.h>
 #include <htmlhelp.h>
@@ -17,10 +19,12 @@
 
 struct CN_DIALOG_DATA
 {
-	const char *dlgTitle;
-	const char *wndDesc;
-	int maxLength;
-	int inpValue;
+	const char *dlgTitle = nullptr;
+	const char *wndDesc = nullptr;
+	const char *allowedSymbols = nullptr;
+	const char *disallowError = nullptr;
+	char resultText[128];
+	int maxLength = sizeof(resultText) / sizeof(char) - 1;
 };
 
 const char* const gDataTabs[] = {STR_TAB_FACT, STR_TAB_SET, STR_TAB_COR};
@@ -65,7 +69,7 @@ const char FILETYPE_DATA = 'D';
 const char FILETYPE_RESULT = 'R';
 
 LRESULT WINAPI MainWindowProc(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK DelAddDlgProc(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK PatternInpDlgProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 bool SaveGridData(GridWindow *grid, HANDLE file, int first_col = 1);
@@ -1040,15 +1044,128 @@ void MainWindow::SetDataGridsFixedCells(bool fg, bool sg, bool cg, bool chSize /
 	}
 }
 
-void MainWindow::DeleteSet(int num)
+void MainWindow::ShowIntervalError(const char *msg, const char *interval)
 {
-	if (num < 1 || num >= setGrid.GetRowsCount())
+	const char *intervalEnd = interval;
+	while (*intervalEnd && *intervalEnd != ';' && *intervalEnd != ',') {
+		++intervalEnd;
+	}
+	const auto msgLen = strlen(msg);
+	auto *fullMsg = new char [msgLen + intervalEnd - interval + 1];
+	memcpy(fullMsg, msg, msgLen);
+	memcpy(fullMsg + msgLen, interval, intervalEnd - interval);
+	fullMsg[msgLen + intervalEnd - interval] = 0;
+	MessageBox(wndHandle, fullMsg, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
+	delete[] fullMsg;
+}
+
+std::vector<std::pair<unsigned int, unsigned int>>
+	MainWindow::ParseIntervals(const char *intervals, unsigned int count)
+{
+	unsigned int intervalStart, intervalEnd;
+	bool hasStart = false, waitEnd = false, hasEnd = false;
+	const char *currentStart = intervals;
+
+	std::vector<std::pair<unsigned int, unsigned int>> result;
+	while (*intervals || hasStart)
 	{
-		MessageBox(wndHandle, STR_MSG_BADSETNUM, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
+		if (!*intervals || *intervals == ';' || *intervals == ',')
+		{
+			if (waitEnd)
+			{
+				ShowIntervalError(STR_INVALID_INTERVAL, currentStart);
+				return {};
+			}
+			if (hasStart)
+			{
+				if (!hasEnd)
+					intervalEnd = intervalStart;
+				result.emplace_back(intervalStart, intervalEnd);
+				hasStart = hasEnd = false;
+			}
+			if (*intervals)
+				++intervals;
+			currentStart = intervals;
+		}
+		else if (*intervals == '-')
+		{
+			if (!hasStart || waitEnd || hasEnd)
+			{
+				ShowIntervalError(STR_INVALID_INTERVAL, currentStart);
+				return { };
+			}
+			waitEnd = true;
+			++intervals;
+		}
+		else
+		{
+			char *parsedUntil;
+			const auto result = strtoul(intervals, &parsedUntil, 10);
+			if (parsedUntil == intervals)
+			{
+				ShowIntervalError(STR_INVALID_INTERVAL_CHAR, currentStart);
+				return { };
+			}
+			if (result < 1 || result > count)
+			{
+				ShowIntervalError(STR_INTERVAL_OVERFLOW, currentStart);
+				return { };
+			}
+			intervals = parsedUntil;
+
+			if (!hasStart)
+			{
+				hasStart = true;
+				intervalStart = result;
+			}
+			else if (waitEnd)
+			{
+				hasEnd = true;
+				waitEnd = false;
+				intervalEnd = result;
+				if (intervalEnd < intervalStart)
+				{
+					ShowIntervalError(STR_INVALID_INTERVAL_ORDER, currentStart);
+					return { };
+				}
+			}
+			else
+			{
+				ShowIntervalError(STR_INVALID_INTERVAL, currentStart);
+				return { };
+			}
+		}
+	}
+	std::sort(result.begin(), result.end());
+
+	intervalEnd = 0;
+	for (const auto &el : result)
+	{
+		if (el.first <= intervalEnd)
+		{
+			MessageBox(wndHandle, STR_INTERVALS_OVERLAP, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
+			return { };
+		}
+		intervalEnd = el.second;
+	}
+	return result;
+}
+
+void MainWindow::DeleteSets(const char *intervalsStr)
+{
+	auto intervals = ParseIntervals(intervalsStr, setGrid.GetRowsCount() - 1);
+	if (intervals.empty())
 		return;
+
+	std::reverse(intervals.begin(), intervals.end());
+	for (const auto &el : intervals)
+	{
+		for (auto num = el.second; num >= el.first; --num)
+		{
+			setGrid.DeleteRow(num);
+		}
 	}
 
-	setGrid.DeleteRow(num);
 	SetDataGridsFixedCells(false, true, false, false);
 
 	setGrid.Redraw();
@@ -1059,24 +1176,29 @@ void MainWindow::DeleteSet(int num)
 	}
 }
 
-void MainWindow::DeleteFactor(int num)
+void MainWindow::DeleteFactors(const char *intervalsStr)
 {
 	unsigned int sCnt;
 
-	if (num < 1 || num >= factGrid.GetRowsCount())
-	{
-		MessageBox(wndHandle, STR_MSG_BADFACTNUM, STR_TITLE_MAINWINDOW, MB_OK | MB_ICONEXCLAMATION);
+	auto intervals = ParseIntervals(intervalsStr, factGrid.GetRowsCount() - 1);
+	if (intervals.empty())
 		return;
+
+	std::reverse(intervals.begin(), intervals.end());
+	for (const auto &el : intervals)
+	{
+		for (auto num = el.second; num >= el.first; --num)
+		{
+			factGrid.DeleteRow(num);
+			corGrid.DeleteRow(num);
+
+			sCnt = sizeof(gSetCols) / sizeof(char*) - 1;
+			setGrid.DeleteCol(sCnt + num - 1);
+
+			sCnt = sizeof(gCorCols) / sizeof(char*);
+			corGrid.DeleteCol(sCnt + num - 1);
+		}
 	}
-
-	factGrid.DeleteRow(num);
-	corGrid.DeleteRow(num);
-
-	sCnt = sizeof(gSetCols) / sizeof(char*) - 1;
-	setGrid.DeleteCol(sCnt+num-1);
-
-	sCnt = sizeof(gCorCols) / sizeof(char*);
-	corGrid.DeleteCol(sCnt+num-1);
 
 	SetDataGridsFixedCells(true, true, true, false);
 
@@ -1289,7 +1411,6 @@ void MainWindow::AssociateCmd(void)
 
 void MainWindow::DelAddCmd(int id)
 {
-	int i;
 	CN_DIALOG_DATA cnDlgProp;
 
 	if (fileType != FILETYPE_DATA)
@@ -1300,55 +1421,53 @@ void MainWindow::DelAddCmd(int id)
 	case COMID_ADDFACT:
 		cnDlgProp.dlgTitle = STR_TITLE_ADDDLG;
 		cnDlgProp.wndDesc = STR_DLG_ADDFACT;
+		cnDlgProp.allowedSymbols = STR_DLG_ADDPATTERN;
+		cnDlgProp.disallowError = STR_DLG_ADDERROR;
 		cnDlgProp.maxLength = 3;
 		break;
 
 	case COMID_DELFACT:
 		cnDlgProp.dlgTitle = STR_TITLE_DELDLG;
 		cnDlgProp.wndDesc = STR_DLG_DELFACT;
-		cnDlgProp.maxLength = 1;
-
-		i = factGrid.GetRowsCount() - 1;
-		while(i /= 10)
-			++cnDlgProp.maxLength;
+		cnDlgProp.allowedSymbols = STR_DLG_DELPATTERN;
+		cnDlgProp.disallowError = STR_DLG_DELERROR;
 		break;
 
 	case COMID_ADDSET:
 		cnDlgProp.dlgTitle = STR_TITLE_ADDDLG;
 		cnDlgProp.wndDesc = STR_DLG_ADDSET;
+		cnDlgProp.allowedSymbols = STR_DLG_ADDPATTERN;
+		cnDlgProp.disallowError = STR_DLG_ADDERROR;
 		cnDlgProp.maxLength = 3;
 		break;
 
 	case COMID_DELSET:
 		cnDlgProp.dlgTitle = STR_TITLE_DELDLG;
 		cnDlgProp.wndDesc = STR_DLG_DELSET;
-		cnDlgProp.maxLength = 1;
-
-		i = setGrid.GetRowsCount() - 1;
-		while(i /= 10)
-			++cnDlgProp.maxLength;
+		cnDlgProp.allowedSymbols = STR_DLG_DELPATTERN;
+		cnDlgProp.disallowError = STR_DLG_DELERROR;
 		break;
 	}
 
-	if (DialogBoxParam((HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE), MAKEINTRESOURCE(DIALOG_DELADD), wndHandle, DelAddDlgProc, (LPARAM) &cnDlgProp) != IDOK)
+	if (DialogBoxParam((HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE), MAKEINTRESOURCE(DIALOG_PATTERNINP), wndHandle, PatternInpDlgProc, (LPARAM) &cnDlgProp) != IDOK)
 		return;
 
 	switch (id)
 	{
 	case COMID_ADDFACT:
-		AddFactors(cnDlgProp.inpValue);
+		AddFactors(atoi(cnDlgProp.resultText));
 		break;
 
 	case COMID_DELFACT:
-		DeleteFactor(cnDlgProp.inpValue);
+		DeleteFactors(cnDlgProp.resultText);
 		break;
 
 	case COMID_ADDSET:
-		AddSets(cnDlgProp.inpValue);
+		AddSets(atoi(cnDlgProp.resultText));
 		break;
 
 	case COMID_DELSET:
-		DeleteSet(cnDlgProp.inpValue);
+		DeleteSets(cnDlgProp.resultText);
 		break;
 	}
 }
@@ -1419,7 +1538,6 @@ void MainWindow::AboutCmd(void)
 
 	hInst = (HINSTANCE) GetWindowLong(wndHandle, GWL_HINSTANCE);
 
-	cnDlgProp.maxLength = cnDlgProp.inpValue = 0;
 	cnDlgProp.dlgTitle = STR_TITLE_ABOUTDLG;
 	cnDlgProp.wndDesc = STR_DLG_ABOUT;
 
@@ -1808,12 +1926,11 @@ LRESULT MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-BOOL CALLBACK DelAddDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK PatternInpDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static int *result;
+	static CN_DIALOG_DATA *dlgProp;
 
 	HICON mainIcon;
-	CN_DIALOG_DATA *dlgProp;
 
 	switch (uMsg)
 	{
@@ -1821,25 +1938,69 @@ BOOL CALLBACK DelAddDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		dlgProp = (CN_DIALOG_DATA*) lParam;
 
 		mainIcon = (HICON) LoadImage((HINSTANCE) GetWindowLong(hWnd, GWL_HINSTANCE), MAKEINTRESOURCE(ICON_MAIN), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
-		SendDlgItemMessage(hWnd, DELADD_NUMEDIT_ID, EM_LIMITTEXT, dlgProp->maxLength, 0);
+		SendDlgItemMessage(hWnd, PATTERNINP_EDIT_ID, EM_LIMITTEXT, dlgProp->maxLength, 0);
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) mainIcon);
 		SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM) dlgProp->dlgTitle);
-		SetDlgItemText(hWnd, DELADD_TEXT_ID, dlgProp->wndDesc);
-
-		if ((result = &(dlgProp->inpValue)))
-			*result = 0;
+		SetDlgItemText(hWnd, PATTERNINP_TEXT_ID, dlgProp->wndDesc);
 		return TRUE;
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam))
 		{
 		case IDOK:
-			if (result)
-				*result = GetDlgItemInt(hWnd, DELADD_NUMEDIT_ID, NULL, FALSE);
+			GetDlgItemText(hWnd, PATTERNINP_EDIT_ID, dlgProp->resultText, sizeof(dlgProp->resultText));
 			[[fallthrough]];
 		case IDCANCEL:
 			EndDialog(hWnd, LOWORD(wParam));
 			return TRUE;
+		case PATTERNINP_EDIT_ID:
+			{
+				bool needBaloon = (HIWORD(wParam) == EN_MAXTEXT);
+				if (HIWORD(wParam) == EN_UPDATE)
+				{
+					const char *allowedEnd = dlgProp->allowedSymbols + strlen(dlgProp->allowedSymbols);
+
+					DWORD caretPos;
+					SendMessage((HWND) lParam, EM_GETSEL, (WPARAM) &caretPos, 0);
+					GetDlgItemText(hWnd, PATTERNINP_EDIT_ID, dlgProp->resultText, sizeof(dlgProp->resultText));
+
+					char *curPos, *checkPos;
+					for (curPos = checkPos = dlgProp->resultText; *checkPos; ++checkPos) {
+						if (std::find(dlgProp->allowedSymbols, allowedEnd, *checkPos) != allowedEnd)
+						{
+							if (curPos != checkPos)
+								*curPos = *checkPos;
+							++curPos;
+						}
+						else if (caretPos > curPos - dlgProp->resultText)
+							--caretPos;
+					}
+					*curPos = 0;
+
+					if (curPos != checkPos)
+					{
+						needBaloon = true;
+						SetDlgItemText(hWnd, PATTERNINP_EDIT_ID, dlgProp->resultText);
+						SendMessage((HWND) lParam, EM_SETSEL, caretPos, caretPos);
+					}
+				}
+				if (needBaloon)
+				{
+					wchar_t wideTitle[32], wideText[128];
+					MultiByteToWideChar(CP_ACP, 0, STR_TITLE_PATTERNERROR, -1, wideTitle, sizeof(wideTitle) / sizeof(wchar_t));
+					MultiByteToWideChar(CP_ACP, 0, dlgProp->disallowError, -1, wideText, sizeof(wideText) / sizeof(wchar_t));
+
+					EDITBALLOONTIP tooltipInfo;
+					tooltipInfo.cbStruct = sizeof(tooltipInfo);
+					tooltipInfo.pszText = wideText;
+					tooltipInfo.pszTitle = wideTitle;
+					tooltipInfo.ttiIcon = TTI_ERROR;
+					SendMessage((HWND) lParam, EM_SHOWBALLOONTIP, 0, (LPARAM) &tooltipInfo);
+				}
+				else
+					SendMessage((HWND) lParam, EM_HIDEBALLOONTIP, 0, 0);
+				return TRUE;
+			}
 		}
 		break;
 
