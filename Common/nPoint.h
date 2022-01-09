@@ -27,7 +27,7 @@ public:
 
 	void Print(FILE* = NULL) const;
 
-	int Dim(void) { return n; }
+	int Dim(void) const { return n; }
 	double& operator [] (int i) { return *(x+i); }
 	double operator [] (int i) const { if (i < 0 || i >= n) return 0; return x[i]; }
 

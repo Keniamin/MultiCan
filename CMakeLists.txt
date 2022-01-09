@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.22)
 
 project(MultiCan)
 
+add_compile_options(-Wall -Wextra -Werror)
+
+add_compile_definitions(_LANG_RUS)
+
 add_executable(${PROJECT_NAME}
     CanAn.cpp
     MainWindow.cpp
@@ -12,8 +16,6 @@ add_executable(${PROJECT_NAME}
     Common/TitleWindow.cpp
     MultiCan/Resources.rc
 )
-
-add_compile_definitions(_LANG_RUS)
 
 target_link_libraries(${PROJECT_NAME}
     -mwindows

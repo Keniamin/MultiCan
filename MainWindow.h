@@ -7,11 +7,19 @@
 
 #include "Common/GridWindow.h"
 
+enum class FileTypeEnum : char
+{
+	DATA = 'D',
+	RESULT = 'R',
+	// with Mahalanobis distances
+	RESULT_V2 = 'M',
+};
+
 class MainWindow
 {
 private:
-	static const int minWndHeight = 300;
-	static const int minWndWidth = 400;
+	static const int minWndHeight = 450;
+	static const int minWndWidth = 600;
 
 	static bool classReady;
 
@@ -20,11 +28,11 @@ private:
 	HWND tabCtrl;
 
 	GridWindow factGrid, setGrid, corGrid;
-	GridWindow varGrid, stdGrid, pntGrid;
+	GridWindow varGrid, pntGrid, stdGrid, distGrid;
 	HFONT gFont;
 
 	char *workFile;
-	char fileType;
+	FileTypeEnum fileType;
 	bool changed;
 	int pathLen;
 
@@ -32,7 +40,7 @@ private:
 	void UpdateTitle(void);
 	void ResizeChildren(void);
 	void ShowTab(int tab_number);
-	void SetFileType(char new_type);
+	void SetFileType(FileTypeEnum new_type);
 
 	void ResetFile(void);
 	bool SaveFile(char *filename);
@@ -40,10 +48,10 @@ private:
 
 	bool SaveData(HANDLE file);
 	bool SaveSizes(HANDLE file);
-	bool LoadData(HANDLE file, char new_type);
-	bool LoadSizes(HANDLE file, char new_type);
+	bool LoadData(HANDLE file, FileTypeEnum new_type);
+	bool LoadSizes(HANDLE file, FileTypeEnum new_type);
 
-	void SetVarGridsFixedCells(bool var_grid, bool std_grid, bool pnt_grid, bool set_sizes = true);
+	void SetResultGridsFixedCells(bool var_grid, bool pnt_grid, bool std_grid, bool dist_grid, bool set_sizes = true);
 	void SetDataGridsFixedCells(bool fact_grid, bool set_grid, bool cor_grid, bool set_sizes = true);
 
 	void ShowIntervalError(const char *msg, const char *interval);

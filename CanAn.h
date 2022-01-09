@@ -12,12 +12,14 @@ private:
 
 	int factCount, setCount, varCount;
 
-	double *intMatr, *extMatr;
+	double *intMatr, *extMatr, *mahDistMatr;
 	unsigned int *setMark, *setVol;
 	nVector eigVal, cumProp, stdDev, *mean, *varCoef, *stdCoef, *setCoord;
 
 	char **factName;
 	char **setName;
+
+	void SetVarCount(void);
 
 	int Analysis(void);
 	void EnsureArrays(void);
@@ -50,6 +52,7 @@ public:
 	double GetVarCoef(int variable_number, int factor_number);
 	double GetStdCoef(int variable_number, int factor_number);
 	double GetSetCoord(int set_number, int variable_number);
+	double GetSetsDist(int first_set_number, int second_set_number);
 	double GetCumProp(int variable_number);
 	double GetEigVal(int variable_number);
 	double GetConst(int variable_number);

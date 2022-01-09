@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 
 #include "CanAn.h"
 
@@ -8,11 +9,17 @@
 const double EPS = 1e-12;
 const double EIG_EPS = 1e-6;
 
+enum class MatrModeEnum {
+	LOWER_TRIANGULAR,
+	UPPER_TRIANGULAR,
+	SYMMETRIC,
+};
+
 size_t MatrInd(int row, int col);
 bool CholeskyDecomp(double *matrix, int size);
 double* InverseMatr(double *matrix, int size);
 double* TransformMatr(double *matrix, double *transformation, int size);
-nVector MatrMultVector(double *matrix, const nVector& vector, int size, bool is_symmetric);
+nVector MatrMultVector(double *matrix, const nVector& vector, int size, MatrModeEnum matrix_mode);
 
 DWORD WINAPI AnalysisThread(LPVOID param)
 {
@@ -65,13 +72,25 @@ void CanAn::StopAnalysis(void)
 {
 	DWORD exitCode = 0xFFFFFFFF;
 	if (exitCode == STILL_ACTIVE)
+	{
+		// Ensure unique exit code
 		exitCode = 0x80000000;
+	}
 
+	CheckThread();
 	if (anThread)
 	{
 		TerminateThread(anThread, exitCode);
 		CheckThread();
 	}
+}
+
+void CanAn::SetVarCount(void)
+{
+	if (setCount > 1 && factCount > 0)
+		varCount = std::min(setCount - 1, factCount);
+	else
+		varCount = 0;
 }
 
 void CanAn::SetFactCount(int count)
@@ -83,10 +102,7 @@ void CanAn::SetFactCount(int count)
 
 	DeleteArrays();
 	factCount = count;
-	if (setCount > 1)
-		varCount = ((setCount-1 < factCount) ? setCount-1 : factCount);
-	else
-		varCount = 0;
+	SetVarCount();
 }
 
 void CanAn::SetSetCount(int count)
@@ -98,10 +114,7 @@ void CanAn::SetSetCount(int count)
 
 	DeleteArrays();
 	setCount = count;
-	if (setCount > 1)
-		varCount = ((setCount-1 < factCount) ? setCount-1 : factCount);
-	else
-		varCount = 0;
+	SetVarCount();
 }
 
 void CanAn::SetFactName(int i, const char *name)
@@ -238,6 +251,15 @@ double CanAn::GetSetCoord(int s, int v)
 	return setCoord[s][v];
 }
 
+double CanAn::GetSetsDist(int s1, int s2)
+{
+	if (anThread || s1 < 0 || s2 < 0 || s1 >= setCount || s2 >= setCount)
+		return 0;
+
+	EnsureArrays();
+	return mahDistMatr[MatrInd(s1, s2)];
+}
+
 double CanAn::GetCumProp(int i)
 {
 	if (anThread || i < 0 || i >= varCount)
@@ -291,10 +313,28 @@ int CanAn::Analysis(void)
 
 	EnsureArrays();
 
+	// Convert correlation to covariation
 	for (c = 0; c < factCount; ++c)
 		for (r = 0; r <= c; ++r)
 			intMatr[MatrInd(r, c)] *= stdDev[r] * stdDev[c];
 
+	if (!CholeskyDecomp(intMatr, factCount))
+		return 2;
+
+	if (!(matr = InverseMatr(intMatr, factCount)))
+		return 3;
+	delete[] intMatr;
+	intMatr = matr;
+
+	// Calculate Mahalanobis distances
+	for (c = 0; c < setCount; ++c)
+		for (r = 0; r <= c; ++r)
+		{
+			v = MatrMultVector(intMatr, mean[c] - mean[r], factCount, MatrModeEnum::LOWER_TRIANGULAR);
+			mahDistMatr[MatrInd(r, c)] = norm(v);
+		}
+
+	// Total amount and weighted sum
 	num = 0;
 	mean[setCount] *= 0;
 	for (s = 0; s < setCount; ++s)
@@ -304,8 +344,10 @@ int CanAn::Analysis(void)
 	}
 
 	if (num < 1)
-		return 2;
+		return 4;
 
+	// Actually `sum(setVol[s] * (mean[s][r] - weighted_mean[r]) * (mean[s][c] - weighted_mean[c]))`
+	// with opened brackets and simplified to use weighted sum calculated above (instead of mean)
 	tmp = 1.0 / num;
 	for (c = 0; c < factCount; ++c)
 		for (r = 0; r <= c; ++r)
@@ -315,29 +357,22 @@ int CanAn::Analysis(void)
 				extMatr[MatrInd(r, c)] += setVol[s] * mean[s][r] * mean[s][c];
 		}
 
-	if (!CholeskyDecomp(intMatr, factCount))
-		return 3;
-
-	if (!(matr = InverseMatr(intMatr, factCount)))
-		return 4;
-	delete[] intMatr;
-	intMatr = matr;
-
 	if (!(matr = TransformMatr(extMatr, intMatr, factCount)))
 		return 5;
-	delete[] extMatr;
-	extMatr = matr;
 
+	// Calculate trace, it is equal to sum of eigenvalues
 	tmp = 0;
 	for (r = 0; r < factCount; ++r)
-		tmp += extMatr[MatrInd(r, r)];
+		tmp += matr[MatrInd(r, r)];
 
+	// Prepare variability fraction vector
 	if (fabs(tmp) > EPS)
 		tmp = 1.0 / tmp;
 	cumProp.Redim(varCount);
 	for (s = 0; s < varCount; ++s)
 		cumProp[s] = tmp;
 
+	// Find eigenvalues using power iteration method
 	eigVal.Redim(varCount);
 	for (s = 0; s < varCount; ++s)
 	{
@@ -349,7 +384,7 @@ int CanAn::Analysis(void)
 		do
 		{
 			eigVal[s] = tmp;
-			v = MatrMultVector(extMatr, varCoef[s], factCount, true);
+			v = MatrMultVector(matr, varCoef[s], factCount, MatrModeEnum::SYMMETRIC);
 
 			tmp = 0;
 			for (r = 0; r < factCount; ++r)
@@ -369,16 +404,20 @@ int CanAn::Analysis(void)
 
 		for (c = 0; c < factCount; ++c)
 			for (r = 0; r <= c; ++r)
-				extMatr[MatrInd(r, c)] -= tmp * varCoef[s][r] * varCoef[s][c];
+				matr[MatrInd(r, c)] -= tmp * varCoef[s][r] * varCoef[s][c];
 	}
+	delete[] matr;
 
+	// Convert vector back to original matrix (before `TransformMatr` call above)
+	// Also normalize eigenvalues because we did not normalized `extMatr` initially
 	tmp = 1.0 / (setCount - 1);
 	for (s = 0; s < varCount; ++s)
 	{
-		varCoef[s] = MatrMultVector(intMatr, varCoef[s], factCount, false);
+		varCoef[s] = MatrMultVector(intMatr, varCoef[s], factCount, MatrModeEnum::UPPER_TRIANGULAR);
 		eigVal[s] *= tmp;
 	}
 
+	// Calculate standartized vectors
 	for (s = 0; s < varCount; ++s)
 	{
 		stdCoef[s] = varCoef[s];
@@ -390,6 +429,7 @@ int CanAn::Analysis(void)
 		varCoef[s][factCount] = tmp / num;
 	}
 
+	// Calculate set coordinates
 	for (s = 0; s < setCount; ++s)
 	{
 		mean[s].Redim(factCount + 1);
@@ -399,6 +439,7 @@ int CanAn::Analysis(void)
 		for (r = 0; r < varCount; ++r)
 			setCoord[s][r] = scal(mean[s], varCoef[r]);
 	}
+
 	return 0;
 }
 
@@ -415,6 +456,10 @@ void CanAn::EnsureArrays(void)
 	}
 	if (!extMatr && prod > 0)
 		extMatr = new double [prod];
+
+	prod = setCount * (setCount+1) / 2;
+	if (!mahDistMatr && prod > 0)
+		mahDistMatr = new double [prod];
 
 	if (!setMark && setCount > 0)
 		setMark = new unsigned int [setCount];
@@ -467,6 +512,11 @@ void CanAn::DeleteArrays(void)
 	{
 		delete[] extMatr;
 		extMatr = NULL;
+	}
+	if (mahDistMatr)
+	{
+		delete[] mahDistMatr;
+		mahDistMatr = NULL;
 	}
 
 	if (setMark)
@@ -550,6 +600,8 @@ size_t MatrInd(int r, int c)
 	return index;
 }
 
+// Converts symmetric matrix S to upper triangular U
+// so that S = U' U (where streak means transposition)
 bool CholeskyDecomp(double *matr, int n)
 {
 	double tmp;
@@ -580,6 +632,7 @@ bool CholeskyDecomp(double *matr, int n)
 	return true;
 }
 
+// `matr` is considered to be upper triangular
 double* InverseMatr(double *matr, int n)
 {
 	int r, c, i;
@@ -617,6 +670,7 @@ double* InverseMatr(double *matr, int n)
 	return inv;
 }
 
+// For symmetric matrix S and upper triangular U calculates U' S U
 double* TransformMatr(double *matr, double *trans, int n)
 {
 	int r, c, i;
@@ -643,21 +697,38 @@ double* TransformMatr(double *matr, double *trans, int n)
 	return res;
 }
 
-nVector MatrMultVector(double *matr, const nVector& v, int n, bool sym)
+// Matrix may be either symmetric or triangular
+nVector MatrMultVector(double *matr, const nVector& v, int n, MatrModeEnum mode)
 {
 	double tmp;
 	nVector res;
-	int r, c, k;
+	int r, c, k1, k2;
 
-	if (n < 1 || !matr)
+	if (n < 1 || v.Dim() != n || !matr)
 		return res;
 
 	res.Redim(n);
 	for (c = 0; c < n; ++c)
 	{
+		switch (mode)
+		{
+		case MatrModeEnum::UPPER_TRIANGULAR:
+			k1 = 0;
+			k2 = c;
+			break;
+
+		case MatrModeEnum::LOWER_TRIANGULAR:
+			k1 = c;
+			k2 = n-1;
+			break;
+
+		case MatrModeEnum::SYMMETRIC:
+			k1 = 0;
+			k2 = n-1;
+			break;
+		}
 		tmp = v[c];
-		k = (sym ? n-1 : c);
-		for (r = 0; r <= k; ++r)
+		for (r = k1; r <= k2; ++r)
 			res[r] += tmp * matr[MatrInd(r, c)];
 	}
 	return res;

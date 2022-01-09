@@ -37,9 +37,9 @@ static const char STR_TAB_SET[] = "Выборки";
 static const char STR_TAB_COR[] = "Корреляционная матрица";
 
 static const char STR_TAB_VAR[] = "Канонические переменные";
-static const char STR_TAB_STD[] = "Стандартизованные коэффициенты дискриминантной функции";
 static const char STR_TAB_PNT[] = "Положения выборок";
-static const char STR_TAB_DIST[] = "Матрица расстояний Махаланобиса";
+static const char STR_TAB_STD[] = "Стандартизованные коэффициенты";
+static const char STR_TAB_DIST[] = "Расстояния Махаланобиса";
 
 
 static const char STR_MSG_WANTSAVE[] = "Текущий файл не сохранен!\nХотите сохранить измененя?";
